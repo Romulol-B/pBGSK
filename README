@@ -1,11 +1,11 @@
 # Seleção de features pelo algoritimo Binary-Gain-Seek-Knowledge com redução populacional.
 
-## Importante Trabalho em andamento.
+## Importante!: Trabalho em andamento.
 
 Todo codigo aqui obviamente esta sujeito a modificações, porem e necessario reforçar TRABALHO EM ANDAMENTO.
 Oque falta :
 1. Modularização do loop.
-2. Implementação de graficos para a populariedade de cada feature ao longo das gerações.
+2. passar as funções do notebook para .py
 3. Compatibilidade com outros datasets dentro do UCI
 
 ## Por que e como ?
