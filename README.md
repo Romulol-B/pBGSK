@@ -10,9 +10,9 @@ Oque falta :
 
 ## Por que e como ?
 
-Decidi implementar este paper https://doi.org/10.1007/s00521-020-05375-8(0123456789().,-volV)(0123456789().,-volV)
-*A novel binary gaining–sharing knowledge-based optimization
-algorithm for feature selection*
+Decidi implementar este paper [A novel binary gaining–sharing knowledge-based optimization
+algorithm for feature selection](https://link.springer.com/article/10.1007/s00521-020-05375-8)
+**
 
 ## Inspiração de comportamento
 
