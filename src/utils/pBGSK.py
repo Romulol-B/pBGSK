@@ -30,7 +30,6 @@ class Individual:
         self.X_test= X_test
         self.y_train = y_train
         self.y_test = y_test
-        #sk.model_selection.train_test_split(self.features, self.targets, test_size=0.33, random_state=42)
         self.acc = 0
         self.score = 2
         self.classifier = KNeighborsClassifier(n_neighbors=knn_val)
@@ -97,7 +96,6 @@ class Population:
 
         return  diff # a distribuição foi alterada
     def dimension_classification(self,nfe_total):
-        #print(self.d_senior)
         d = len(self.individuals[0].features)
         if self.d_junior==0:#talvez nao precise desse if.
             self.dimension_distribution(nfe_total)
@@ -106,28 +104,23 @@ class Population:
             for i in idxs:
                 self.junior_features[idxs] = 1
             self.senior_features = np.array([1]*d) - self.junior_features
-            #print(f'senior :{self.senior_features}')
         else:
             diff = self.dimension_distribution(nfe_total) 
-            #print (f"diff de nova dimensão:{diff}")
             jf = self.junior_features.copy()
             sf = self.senior_features.copy()
             
             while diff >0:
                 wh = np.squeeze(np.where(jf>0))
                 idx_r = int(random.random()*((wh.size)-1))#escolhe aleatoriamente um dos indexes disponiveis.
-                #print(f"{wh},{idx_r}")
                 jf[wh[idx_r]] =0
                 sf[wh[idx_r]] =1
                 diff =-1
-            #print(f'sr{sf}')
             self.junior_features = jf
             self.senior_features = sf
         return
 
     def beginner_gsk(self,knowledge_ratio=0.95):    
         for t_idx in range(1,self.len-1):
-            #for d in range(len(self.individuals[0].features)):
              for dimension in np.where(self.junior_features >0):
                 if random.random() <knowledge_ratio:
                     rand_idx = int(random.random()*self.len)
@@ -150,9 +143,7 @@ class Population:
 
     def intermediate_gsk(self,knowledge_ratio=0.95):
         len_p = int(self.len*(self.partition))
-        #l = int(self.len/3)
         for t_idx in range(1,self.len-1):
-            #for dimension in range(len(self.individuals[0].features)):
              for dimension in (np.where(self.senior_features)):
                 if random.random() <knowledge_ratio:
                     rand_idx = int(random.random()*len(self.individuals))
@@ -176,20 +167,23 @@ class Population:
                     self.individuals[t_idx].numeric_features[dimension] = (xtk >0) +0
 
     def population_reduction(self, nfe_total,low_b=0.9,high_b=0.95):
-        #if int(self.len*low_b) < len(population):
         np_min =self.len*low_b
         np_max =self.len*high_b
         old_len = self.len
         np_new = int((np_min - np_max) * (self.nfe / nfe_total) + np_max -1)
-        self.df.columns[:-2]
-        k =self.df.loc[:,self.df.columns[:-2]].sum(axis=0)
-        kf = pd.DataFrame([k] )
+
+        ks =pd.DataFrame(self.df.loc[:,self.df.columns[:-3]].sum(axis=0))
+
+        km = self.df.loc[:,['score','n_features','acc']].mean(axis=0).to_numpy()
+        ks= pd.pivot_table(ks,columns =ks.index,values=0 )
+        ks[['mean_score','mean_n_features','mean_acc']] = km 
+        kf = pd.DataFrame(ks)
         self.geng_df = pd.concat([kf,self.geng_df])
+    
         if np_new >12:#minimo viavel
             for i in range(old_len - np_new):
                 self.individuals.pop()
                 self.len -=1
-           #print(f'populacao ate agora:{np_new}')
             return False
         else:
             return True
@@ -203,7 +197,6 @@ class Population:
             row =pd.DataFrame(row)
             df_p=pd.concat([row,df_p],ignore_index=True)
         f, ax = plt.subplots(figsize=(21, 18))
-        # Plot the orbital period with horizontal boxes
         sns.boxplot(
             df_p, x="score", y="feature", hue="feature",
             whis=[0, 100], width=.6, palette="vlag"
@@ -220,6 +213,7 @@ class Population:
         pop_df = pd.DataFrame(np.array(lista_features),columns=self.individuals[0].column_names)
         pop_df['score']= [indiv.score for indiv in self.individuals]
         pop_df['n_features'] = pop_df.loc[:,pop_df.columns!='score'].sum(axis=1)
+        pop_df['acc'] = [indiv.acc for indiv in self.individuals]
         self.df =pop_df
         return pop_df
 def population_creation(num_population:int, lower_k :int, upper_k:int,data_tuple,data_set_name,columns_names,knowledge=0.95) -> Population:
@@ -266,7 +260,6 @@ def feature_selection(data_tuple,num_population:int,nfe_total:int ,lower_k:int,u
 
     pop.dataframe()#criando o dataframe
     pop.sort()#Rankeando os individuos
-    #pop.ploting_score()
     best_score = 2 # 0 acc, com todas as features
 
     while pop.nfe<nfe_total and pop.len>12:
@@ -284,5 +277,4 @@ def feature_selection(data_tuple,num_population:int,nfe_total:int ,lower_k:int,u
             best_score = pop.individuals[0].score
     
         
-    #pop.ploting_score()
     return pop
