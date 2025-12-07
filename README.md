@@ -9,6 +9,15 @@ Oque falta :
 3. Organizar melhor os notebooks 
 4. Compatibilidade com outros datasets dentro do UCI
 
+## Oque já funciona:
+O modelo básico já esta em funcionamento.
+portanto temos:
+feature_selection(data_tuple,num_population:int,nfe_total:int ,lower_k:int,upper_k:int,columns_names)
+data_tuple -> x_treino ,x_test, y_treino , y_test
+nfe_total -> numero de avaliações maximas, cada individuo e avaliado uma vez a cada geração. Orçamento computacional.
+lower_k, upper_k  -> numero minimo e máximo de features.
+columns_names: vetor com o nome de todas as colunas.
+
 ## Por que e como ?
 
 Decidi implementar este paper [A novel binary gaining–sharing knowledge-based optimization
