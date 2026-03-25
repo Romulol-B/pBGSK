@@ -1,4 +1,4 @@
-# Seleção de features pelo algoritimo Binary-Gain-share-Knowledge com redução populacional.
+# Seleção de features pelo algoritimo Binary-Gain-Share-Knowledge com redução populacional.
 
 ## Importante!: Trabalho em andamento.
 
