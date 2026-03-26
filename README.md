@@ -1,47 +1,53 @@
-# Seleção de features pelo algoritimo Binary-Gain-Share-Knowledge com redução populacional.
+# BGSK-FS: Binary Gaining–Sharing Knowledge-based Optimization
 
-## Importante!: Trabalho em andamento.
+Esta é uma implementação do algoritmo **BGSK** (Binary Gaining–Sharing Knowledge), uma meta-heurística moderna aplicada ao problema de **Seleção de Características (Feature Selection)**. O projeto busca otimizar a acurácia de modelos de Machine Learning através da redução inteligente da dimensionalidade dos dados.
 
-Todo codigo aqui obviamente esta sujeito a modificações, porem e necessario reforçar TRABALHO EM ANDAMENTO.
-Oque falta :
-1. Adicionar o .py de graficos
-2. Adicionar os experimentos
-3. Organizar melhor os notebooks 
-4. Compatibilidade com outros datasets dentro do UCI
+---
 
-## Oque já funciona:
-O modelo básico já esta em funcionamento.
+## Inspiração e Conceito
 
-portanto temos:
+O algoritmo é inspirado no comportamento humano de compartilhamento de conhecimento ao longo da vida. Ele divide o processo de otimização em duas fases principais:
 
-feature_selection(data_tuple,num_population:int,nfe_total:int ,lower_k:int,upper_k:int,columns_names)
+1. **Fase Júnior (Early Life):** Simula o aprendizado inicial com pessoas próximas (pais, professores e parentes). No algoritmo, isso se traduz em uma busca onde apenas os indivíduos com desempenho mais próximo influenciam a adesão ou abandono de características.
+2. **Fase Sênior (Late Life):** Simula a participação em grandes comunidades e redes sociais. Aqui, a influência de indivíduos mais distantes na população é levada em conta, permitindo uma exploração global mais eficiente do espaço de busca.
 
-data_tuple -> x_treino ,x_test, y_treino , y_test
+---
 
-nfe_total -> numero de avaliações maximas, cada individuo e avaliado uma vez a cada geração. Orçamento computacional.
+## Funcionamento do Algoritmo
 
-lower_k, upper_k  -> numero minimo e máximo de features.
+### 1. Representação da População
+Cada indivíduo da população é representado por um **vetor binário** de features, gerado aleatoriamente dentro de limites mínimos e máximos de elementos.
+* **1**: A feature está presente no modelo.
+* **0**: A feature foi descartada.
 
-columns_names: vetor com o nome de todas as colunas.
+### 2. Avaliação e Ranqueamento (Fitness)
+O ranqueamento dos indivíduos é baseado em uma função multiobjetivo que busca o equilíbrio entre performance e simplicidade:
+* **Complemento da Acurácia:** $1 - \text{acurácia}$
+* **Proporção de Features:** $1 - (\frac{\text{features selecionadas}}{\text{total de features}})$
 
-## Por que e como ?
+### 3. Redução Dinâmica da População
+O algoritmo utiliza um critério de gerações máximas em conjunto com um número mínimo de indivíduos. 
+* A cada geração, após as fases de compartilhamento de conhecimento, os indivíduos com pior desempenho são descartados.
+* Esse descarte estratégico garante **maior flexibilidade** e foca o processamento nas soluções que apresentam os melhores resultados de convergência.
 
-Decidi implementar este paper [A novel binary gaining–sharing knowledge-based optimization
-algorithm for feature selection](https://link.springer.com/article/10.1007/s00521-020-05375-8)
-**
+---
 
-## Inspiração de comportamento
+## Como Utilizar
 
-Algoritimo baseado em compartilhamento de conhecimento ao longo da vida de um humano.Durante a fase inicial da vida individuos aprendem com aqueles mais proximos e como professores e parentes, em seguida nos tornamos menbros mais ativos de comunidades maiores atravez de redes socias e grandes comunidades. O algoritmo se inspira nesta caracteristica humana, atravez de uma fase inicial em que apenas os individuos com o desenpenho mais proximo são responsavel pela adesão ou abandono de determinadas caracteristicas, em seguida a influencia de individuos mais distantes são levadas em conta.
+```python
+# Exemplo básico de uso (ajuste conforme sua implementação)
+from bgsk_fs import BGSKOptimizer
 
+# Inicialize o otimizador
+optimizer = BGSKOptimizer(min_features=5, max_population=50)
+
+# Execute a seleção de características
+best_features = optimizer.fit(X_train, y_train)
+
+print(f"Features selecionadas: {best_features}")
 ## Funcionamento do algoritmo.
+```
+## Como o Paper faz o banchmark.
 ![alt text](images/image.png)
+Implementado por Romulo Ferreira da Silva
 
-Cada individuo é formado por um vetor binario de features criado aleatoriamente com um minimo e um maximo de elementos,uma população é feita destes individuos 
-valiação inicial, rankeando os melhores individuos, cada individuo possui um vetor binario de features estes que indicam quais features estarão ou não presentes.Em seguida, apos o rankeamento baseado no complemento da accuracia, (1-acuracia) e no complemento da proporção de features (1- features/total).
-
-
-
-## Redução de população
-
-O algoritmo possui um numero gerações maximas estipuladas em conjunto com um numero minimo de individuos, a cada geração os algoritmos com o pior desempenho são descartados apos as duas fases de compartilhamento , esse descarte é feito após o compartilhamento afim reduzir as features associadas com o menor desenpenho entre os individuos com melhor desenpenho.desta forma garantindo maior flexibilidade e descartando as piores soluções.
