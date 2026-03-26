@@ -4,7 +4,7 @@ Esta é uma implementação do algoritmo **BGSK** (Binary Gaining–Sharing Know
 
 ---
 
-## Inspiração e Conceito
+## 🧠 Inspiração e Conceito
 
 O algoritmo é inspirado no comportamento humano de compartilhamento de conhecimento ao longo da vida. Ele divide o processo de otimização em duas fases principais:
 
@@ -13,7 +13,7 @@ O algoritmo é inspirado no comportamento humano de compartilhamento de conhecim
 
 ---
 
-## Funcionamento do Algoritmo
+## 🛠️ Funcionamento do Algoritmo
 
 ### 1. Representação da População
 Cada indivíduo da população é representado por um **vetor binário** de features, gerado aleatoriamente dentro de limites mínimos e máximos de elementos.
@@ -32,7 +32,7 @@ O algoritmo utiliza um critério de gerações máximas em conjunto com um núme
 
 ---
 
-## Como Utilizar
+## 🚀 Como Utilizar
 
 ```python
 # Exemplo básico de uso (ajuste conforme sua implementação)
@@ -45,9 +45,3 @@ optimizer = BGSKOptimizer(min_features=5, max_population=50)
 best_features = optimizer.fit(X_train, y_train)
 
 print(f"Features selecionadas: {best_features}")
-## Funcionamento do algoritmo.
-```
-## Como o Paper faz o banchmark.
-![alt text](images/image.png)
-Implementado por Romulo Ferreira da Silva
-
