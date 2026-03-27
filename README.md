@@ -1,4 +1,4 @@
-# BGSK-FS: Binary Gaining–Sharing Knowledge-based Optimization
+# pBGSK-FS: Population based Binary Gaining–Sharing Knowledge-based Optimization
 
 Esta é uma implementação do algoritmo **BGSK** (Binary Gaining–Sharing Knowledge), uma meta-heurística moderna aplicada ao problema de **Seleção de Características (Feature Selection)**. O projeto busca otimizar a acurácia de modelos de Machine Learning através da redução inteligente da dimensionalidade dos dados.
 
