@@ -1,67 +1,53 @@
-# Algoritomo de Seleção de Features: pBGSK-FS: Population based Binary Gaining–Sharing Knowledge-based Optimization
+# pBGSK-FS: Population-based Binary Gaining–Sharing Knowledge-based Optimization for Feature Selection
 
-Algoritmo é baseado no desempenho de diferentes combinações de features em utilizando knn.
-O processo de seleção de feature é reconhecidamente um problema np-completo, considerando n features temos O(n!) maneiras de combinar as diferentes features.Para solucionar isto existem diferentes metodos, este algoritmo é considerado um wrapper, ou seja é utilizado um modelo (knn) em uma parcela das features , este modelo nos retorna um score, detalhado mais abaixo, que norteia o processo de seleção de feature, portanto este metodo envolve um custo maior e consequentemente uma maior precisão.
+This project implements the **pBGSK-FS** algorithm, a population-based optimization technique tailored for the feature selection task in machine learning. 
 
-## Diferencial
+Feature selection is a well-known NP-hard problem; given $n$ features, there are $O(n!)$ possible ways to combine them. To solve this, the algorithm acts as a **wrapper method**. It evaluates the fitness of different feature subsets by training a K-Nearest Neighbors (KNN) classifier and calculating a score based on both classification accuracy and the ratio of selected features. This method incurs a higher computational cost but generally yields greater precision than filter methods.
 
-Um grande diferencia no setor da computação é a habilidade em copiar soluções, claro que adicionando algum nivel de abstração e engenhosidade, em relação a seleções de features temos inspirações de diversos fenomenos animais e processos, este artigo tenta abstrair o acumulo de conhecimento humano para um algoritmo.
+## The Differential
 
-## Como o artigo pensa sobre conhecimento e relações humanas.
+A major differentiator in the computing sector is the ability to emulate natural or social solutions, adding abstraction and ingenuity. While many feature selection algorithms draw inspiration from animal behaviors or physical processes, this algorithm attempts to abstract the **accumulation of human knowledge** over a lifetime into a computational model.
 
-Durante nossa vida temos diversos influencias , mas se pensarmos com atenção quais são as principais influencias em cada fase da vida ?
-Durante a infancia a familia , vizinhos e professores uma rede social pequena e contida.Depois, ao fim da  adolescencia e começo da vida adulta adentramos em redes maiores, faculdade , professores universitarios , mercado de trabalho lentamente as nossas influencias positivas e negativas aumentam , comportamentos antes não tolerados no ambiente familiar podem ser tolerados fora dele, enquanto outros comportamentos antes aceitos e bem vistos não são mais bem vistos.
+## Theoretical Background: Human Knowledge and Relationships
 
-Em geral a ideia base é o ambiente é mais influente durante a infancia e durante a vida adulta influencias antes distantes agora são importantes.
+Throughout our lives, we are exposed to various influences. But what are the main influences at each stage of life?
 
-## Como isto é aplicado.
+*   **Childhood (Junior Phase):** Our influences are limited to a small, contained social network: family, neighbors, and early teachers.
+*   **Adulthood (Senior Phase):** As we enter college and the job market, our networks expand. Positive and negative influences grow, and our environment dictates different acceptable behaviors.
 
-Temos algums elementos.
-1. População
-2. Individuos
-3. Dimensões
-4. Senioriade
+The core idea is that immediate, local environments are more influential during early stages (Junior), while broader, previously distant influences become important later in life (Senior).
 
-Cada individuo possui um vetor binario que indica quais dimensões estão presentes.
-A População possui os individuos e quais dimensões são junior ou senior.
+## How it is Applied
 
-### Alem disto temos as fases
-0. Population Creation
-1. Population Classification 
-2. Gain-Share Junior
-3. Gain-Share Senior
-4. Population Reduction
+The algorithm relies on the following key elements:
+1.  **Population:** The collection of all individuals.
+2.  **Individuals:** Each individual possesses a binary vector indicating which dimensions (features) are currently selected (active).
+3.  **Dimensions:** The features of the dataset.
+4.  **Seniority:** Dimensions are dynamically classified as either "Junior" or "Senior" as the optimization progresses.
 
-O loop básico é entre 1 a 4.
+### Algorithm Phases
 
-#### Population Creation 
-Uma população de individuos com o numero de dimensões entre [k_lower, k_upper] é criado.
-Um vetor com a senioriade de cada dimensão e estabelecido.
-A cada geração esse vetor aumenta em um ritmo K, aumentando o numero de dimensões seniors.
+The main loop cycles through the following phases:
 
-####  Population Classification
-Cada individuo é classificado em relação a (1- acuracia - features_usadas/features_totais)
-Os individuos são ordenados em relação ao desempenho (menor melhor) 
+1.  **Population Creation:** A population of individuals is created with an initial number of selected dimensions between `[lower_k, upper_k]`. A seniority vector is established for the dimensions.
+2.  **Population Classification (Fitness Evaluation):** Individuals are evaluated and sorted based on their fitness score. Lower scores are better. The score is calculated as: `(1 - accuracy) + (1 - features_used / total_features)`.
+3.  **Gain-Share Junior (Beginner):** Information sharing occurs between neighboring individuals.
+4.  **Gain-Share Senior (Intermediate):** Information sharing occurs using the best, middle, and worst individuals of the population.
+5.  **Population Reduction:** The population size is linearly reduced as the evaluations progress to focus on the most promising individuals.
 
-#### Fase Junior
+#### Dimension Classification
+As the search progresses (measured by the Number of Function Evaluations, or NFE), features transition from the Junior stage (exploration-heavy) to the Senior stage (exploitation-heavy).
 
-Durante as fases temos , basicamente 3 elementos Exemplo positivo , negativo e neutro.
-Durante a fase junior os elementos imediatamente melhor e imediatamente pior (no vetor de desenpenho) servem de exemplo, individuos imediatamente e imediatamente pior.
+$$d_{junior} = d \times \left( 1 - \frac{NFE}{MaxNFE} \right)^K$$
+$$d_{senior} = d - d_{junior}$$
 
-* **$d$**: Dimensão total do problema (número original de atributos).
-* **$NFE$**: Número atual de avaliações da função (*Number of Function Evaluations*).
-* **$MaxNFE$**: Número máximo de avaliações permitidas.
-* **$K$**: Taxa de conhecimento (fator de experiência gerado aleatoriamente).
-* **$P$**: % (float 0-1) da partiçao(p melhores , p piores e 1-2p medianos)
+#### Junior Phase (Beginners)
+During the Junior phase, individuals learn from their immediate neighbors (the one immediately better and the one immediately worse in the sorted population) and a random individual.
 
-Pseudo codigo do artigo numero 1
-* np são os individuos
-* d são as dimensões.
-* f() é o vetor de desenpenho
-* xtk e a dimensão k do individuo x
-```pseudo
-for t = 1 : Np do
-    for k = 1 : d do
+Pseudo-code:
+```text
+for t = 1 to Np do
+    for k = 1 to d do
         if rand ≤ kR (knowledge ratio) then
             if f(xt) > f(xR) then
                 xtk_new = xt + kf * [(xt-1 - xt+1) + (xR - xt)]
@@ -74,50 +60,14 @@ for t = 1 : Np do
     end for
 end for
 ```
-### Resultados da Fase *Beginners-Intermediate* (Caso 1)
 
-Esta tabela representa os resultados possíveis durante o estágio de ganhos e partilhas para iniciantes-intermediários (*Junior Stage*), especificamente para o **Caso 1**, onde a aptidão do indivíduo é melhor que a do indivíduo selecionado para compartilhar: $f(x_t) > f(x_R)$ Esta tabela representa os resultados possíveis durante o estágio de ganhos e partilhas para iniciantes-intermediários (*Junior Stage*), especificamente para o **Caso 1**, onde a aptidão do indivíduo atual é melhor que a do indivíduo selecionado aleatoriamente para compartilhar: $f(x_t) > f(x_R)$
+#### Senior Phase (Intermediate)
+In the Senior phase, influences are broader. The population is partitioned into three groups based on a percentage `P` (e.g., 10%): the best `P`, the worst `P`, and the middle individuals.
 
-No algoritmo original contínuo, a equação de atualização para este cenário é definida como:
-
-$$x_{tk}^{new} = x_t + k_f \cdot [(x_{t-1} - x_{t+1}) + (x_R - x_t)]$$
-
-Temos dois subcasos.
-* **Subcaso (a):** Se o valor de $x_{t-1}$ for **igual** ao de $x_{t+1}$, o resultado binário final modificado será sempre igual ao valor de $x_R$.
-* **Subcaso (b):** Quando $x_{t-1}$ for **diferente** de $x_{t+1}$, o resultado binário final modificado será igual ao valor de $x_{t-1}$. Para manter o limite do espaço discreto, valores calculados fora do domínio binário são ajustados pela heurística: `2` é convertido para `1`, e `-1` é convertido para `0`.
-
-
-| Subcaso | $x_{t-1}$ | $x_{t+1}$ | $x_R$ | Resultado (Cálculo) | Resultado Modificado (Binário) |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **Subcaso (a)** | 0 | 0 | 0 | 0 | **0** |
-| | 0 | 0 | 1 | 1 | **1** |
-| | 1 | 1 | 0 | 0 | **0** |
-| | 1 | 1 | 1 | 1 | **1** |
-| **Subcaso (b)** | 1 | 0 | 0 | 1 | **1** |
-| | 1 | 0 | 1 | 2 | **1** |
-| | 0 | 1 | 0 | -1 | **0** |
-| | 0 | 1 | 1 | 0 | **0** |
-
-O algoritmo baseia-se em como os seres humanos adquirem e compartilham conhecimento ao longo da vida. As dimensões de atualização afetadas por cada estágio evoluem dinamicamente conforme as iterações (avaliações) progridem:
-
-
-$$d_{junior} = d \times \left( 1 - \frac{NFE}{MaxNFE} \right)^K$$
-
-$$d_{senior} = d - d_{junior}$$
-
-
-#### Fase Senior (mais detalhes em breve)
-Agora na fase senior temos influências mais radicais , agora temos 3 partições (p) de individuos os melhores se  p =0.1 temos os melhores 10% os piores 10% e os 80% compondo os medianos.
-se um elemento é pior 
-$$xtk_new = xt + kf * [(x_{pbest} - x_{pworst}) + (x_{middle} - x_{t})]$$
-ou se o elemento t possuir um desempenho pior que o elemento medio aleatorio .
-$$xtk_new = xt + kf * [(xp_{best} - x_{pworst}) + (x_{middle} - x_{t})]$$
-
-
-Pseudo codigo do artigo numero 2:
-```pseudo
-for t = 1 : Np do
-    for k = 1 : d do
+Pseudo-code:
+```text
+for t = 1 to Np do
+    for k = 1 to d do
         if rand ≤ kR (knowledge ratio) then
             if f(xt) > f(xmiddle) then
                 xtk_new = xt + kf * [(xpbest - xpworst) + (xmiddle - xt)]
@@ -130,3 +80,59 @@ for t = 1 : Np do
     end for
 end for
 ```
+
+---
+
+## How to Use
+
+The project provides an easy-to-use functional interface. You need to load your data, split it into training and testing sets, and pass it to the `feature_selection` function.
+
+### Quick Example
+
+```python
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from src.utils.data_importer import data_loader
+from src.utils.pBGSK import feature_selection
+
+# 1. Load a benchmark dataset (e.g., Breast Cancer from UCI)
+dataset = data_loader("breast_cancer")
+X = dataset.data.features
+y = dataset.data.targets
+
+# Basic preprocessing for KNN (handling categorical/NaNs)
+X = pd.get_dummies(X).fillna(X.mean())
+y = y.iloc[:, 0] if isinstance(y, pd.DataFrame) else y
+
+# 2. Split the data
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+data_tuple = (X_train, X_test, y_train, y_test)
+
+# 3. Run the pBGSK Feature Selection algorithm
+population, best_features_mask, best_score = feature_selection(
+    data_tuple=data_tuple,
+    num_population=20,               # Initial population size
+    nfe_total=100,                   # Max number of function evaluations
+    lower_k=1,                       # Min features to select initially
+    upper_k=X_train.shape[1] // 2,   # Max features to select initially
+    columns_names=X_train.columns.tolist(),
+    data_set_name="breast_cancer",
+    knn_val=3                        # K value for the KNN evaluator
+)
+
+print(f"Final Best Score: {best_score:.4f}")
+print(f"Selected Features: {X_train.columns[best_features_mask].tolist()}")
+```
+
+### Main Function Parameters
+
+*   `data_tuple`: A tuple containing `(X_train, X_test, y_train, y_test)`.
+*   `num_population`: The initial number of individuals (solutions) in the population. Must be > 12 to allow for the reduction phases.
+*   `nfe_total`: Total budget for function evaluations. The algorithm stops when this is reached.
+*   `lower_k` / `upper_k`: Bounds for the random number of features assigned to individuals during initialization.
+*   `columns_names`: A list of strings representing the feature names.
+*   `k`: Knowledge factor for dimension distribution (default `0.95`).
+*   `p`: Population partitioning ratio for the Senior phase (default `0.1` or 10%).
+*   `knn_val`: The `n_neighbors` parameter used by the internal KNeighborsClassifier to evaluate fitness.

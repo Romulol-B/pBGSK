@@ -3,3 +3,8 @@
 __pycache__/
 #Data files
 .venv
+#experiments workflow
+utils/data_importer_n.ipynb
+GEMINI.md
+notebooks/expirements.ipynb
+generate_notebook.py

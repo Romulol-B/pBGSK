@@ -22,10 +22,10 @@ DATASET_REGISTRY = {
     "sonar": 151,  # ,
     # large size datasets
     # "hill_valley":  106 , sem import direto
-    # "clean1":  189 , gallstone
-    # "semeion":  49 ,
-    # "arryhythmia":  148 ,
-    # "cnae":  192
+     "clean1":  189 ,# gallstone
+     "semeion":  49 ,
+     "arryhythmia":  148 ,
+     "cnae":  192
 }
 
 
