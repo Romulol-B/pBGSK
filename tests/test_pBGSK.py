@@ -32,6 +32,45 @@ class TestPBGSK(unittest.TestCase):
         indiv = pBGSK.Individual(1, features)
         self.assertEqual(indiv.individual_id, 1)
         np.testing.assert_array_equal(indiv.features, features)
+
+    def test_influence_matches_readme_junior_case_1_table(self):
+        cases = [
+            (0, 0, 0, 0),
+            (0, 0, 1, 1),
+            (1, 1, 0, 0),
+            (1, 1, 1, 1),
+            (1, 0, 0, 1),
+            (1, 0, 1, 1),
+            (0, 1, 0, 0),
+            (0, 1, 1, 0),
+        ]
+
+        for current_value in (0, 1):
+            for better_value, worse_value, random_value, expected in cases:
+                with self.subTest(
+                    current_value=current_value,
+                    better_value=better_value,
+                    worse_value=worse_value,
+                    random_value=random_value,
+                ):
+                    individual = pBGSK.Individual(0, [current_value])
+                    better = pBGSK.Individual(1, [better_value])
+                    worse = pBGSK.Individual(2, [worse_value])
+                    rand_indiv = pBGSK.Individual(3, [random_value])
+
+                    individual.score = 1.0
+                    rand_indiv.score = 0.5
+
+                    pBGSK.influence(
+                        individual=individual,
+                        better=better,
+                        worse=worse,
+                        rand_indiv=rand_indiv,
+                        dimension=0,
+                        kf=1,
+                    )
+
+                    self.assertEqual(int(individual.features[0]), expected)
         
 
     def test_feature_selector_evaluator(self):
@@ -67,11 +106,23 @@ class TestPBGSK(unittest.TestCase):
         indiv2 = pBGSK.Individual(2, [True, True])
         
         pop = pBGSK.Population([indiv1, indiv2], self.data_tuple, self.dataset_name, self.columns_names, knn_val=1)
+        pBGSK.evaluate_pending_individuals(pop)
         pBGSK.sort_population(pop, t_sort="fitness")
         
         # indiv2 score: 0.0 (better), indiv1 score: 0.5
         self.assertEqual(pop.individuals[0].individual_id, 2)
         self.assertEqual(pop.individuals[1].individual_id, 1)
+
+    def test_evaluate_pending_individuals(self):
+        indiv1 = pBGSK.Individual(1, [True, False])
+        indiv2 = pBGSK.Individual(2, [True, True])
+        pop = pBGSK.Population([indiv1, indiv2], self.data_tuple, self.dataset_name, self.columns_names, knn_val=1)
+
+        evaluated = pBGSK.evaluate_pending_individuals(pop)
+
+        self.assertEqual(evaluated, 2)
+        self.assertEqual(indiv1.score, 0.5)
+        self.assertEqual(indiv2.score, 0.0)
 
     def test_dimension_distribution(self):
         # Using a larger dummy population to test distribution
@@ -175,6 +226,37 @@ class TestPBGSK(unittest.TestCase):
             data_set_name=self.dataset_name,
             knn_val=1
         )
+        self.assertIsNotNone(best_features)
+        self.assertLessEqual(best_score, 2.0)
+
+    def test_feature_selection_validates_population_size(self):
+        with self.assertRaises(ValueError):
+            pBGSK.feature_selection(
+                data_tuple=self.data_tuple,
+                num_population=12,
+                nfe_total=50,
+                lower_k=1,
+                upper_k=2,
+                columns_names=self.columns_names,
+                data_set_name=self.dataset_name,
+                knn_val=1
+            )
+
+    def test_feature_selection_keeps_running_at_minimum_population(self):
+        pop, best_features, best_score = pBGSK.feature_selection(
+            data_tuple=self.data_tuple,
+            num_population=20,
+            nfe_total=200,
+            lower_k=1,
+            upper_k=2,
+            columns_names=self.columns_names,
+            data_set_name=self.dataset_name,
+            knn_val=1,
+            time_limit=5.0
+        )
+
+        self.assertEqual(pop.len, 12)
+        self.assertGreaterEqual(pop.nfe, 200)
         self.assertIsNotNone(best_features)
         self.assertLessEqual(best_score, 2.0)
 

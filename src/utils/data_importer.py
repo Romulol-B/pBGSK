@@ -24,21 +24,24 @@ DATASET_REGISTRY = {
     # "hill_valley":  106 , sem import direto
      "clean1":  189 ,# gallstone
      "semeion":  49 ,
-     "arryhythmia":  148 ,
+     "arrhythmia":  148 ,
      "cnae":  192
 }
 
 
 def data_loader(dataset_name: str) -> DataFrame:
-    """ Importa um dos datasets utilizados pelo artigo para benchmark
-        Caso o nome nome não esteja entre os listados o retorna um data frame
-        vazio e levanta um value error.
+    """ Importa um dos datasets utilizados pelo artigo para benchmark.
         
+        Args:
+            dataset_name: Nome do dataset no registro.
+            
+        Returns:
+            O objeto dataset do ucimlrepo.
+            
+        Raises:
+            ValueError: Se o dataset não for encontrado no registro.
      """
-    try:
-        dataset_id = DATASET_REGISTRY[dataset_name]
-        dataset = fetch_ucirepo(id=dataset_id)
-        return dataset
-    except ValueError:
-        print(f"Dataset '{dataset_name}' not found in registry.")
+    if dataset_name not in DATASET_REGISTRY:
+        raise ValueError(f"Dataset '{dataset_name}' not found in registry.")
     
+    return fetch_ucirepo(id=DATASET_REGISTRY[dataset_name])

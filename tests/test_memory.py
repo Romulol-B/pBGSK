@@ -1,15 +1,20 @@
 import unittest
 import os
 import sys
-import psutil
 import pandas as pd
 import numpy as np
+
+try:
+    import psutil
+except ModuleNotFoundError:
+    psutil = None
 
 # Add src to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
 from utils.pBGSK import feature_selection
 
+@unittest.skipUnless(psutil is not None, "psutil is required for memory tests")
 class TestMemoryControl(unittest.TestCase):
     def setUp(self):
         # Default limit if benchmark hasn't been run or file is missing
