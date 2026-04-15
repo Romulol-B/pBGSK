@@ -94,11 +94,11 @@ class TestPBGSK(unittest.TestCase):
     def test_calculate_population_fitness(self):
         features = np.array([True, False])
         indiv = pBGSK.Individual(1, features)
-        pop = pBGSK.Population(
+        apopulation = pBGSK.Population(
             [indiv], self.data_tuple, self.dataset_name, self.columns_names, knn_val=1
         )
 
-        pBGSK.calculate_population_fitness(pop, indiv)
+        pBGSK.calculate_population_fitness(apopulation, indiv)
 
         self.assertEqual(indiv.acc, 1.0)
         # Score: (1-1.0) + (1-1/2) = 0.5
@@ -110,24 +110,24 @@ class TestPBGSK(unittest.TestCase):
         indiv1 = pBGSK.Individual(1, [True, False])
         indiv2 = pBGSK.Individual(2, [True, True])
 
-        pop = pBGSK.Population(
+        apopulation = pBGSK.Population(
             [indiv1, indiv2],
             self.data_tuple,
             self.dataset_name,
             self.columns_names,
             knn_val=1,
         )
-        pBGSK.evaluate_pending_individuals(pop)
-        pBGSK.sort_population(pop, t_sort="fitness")
+        pBGSK.evaluate_pending_individuals(apopulation)
+        pBGSK.sort_population(apopulation, t_sort="fitness")
 
         # indiv2 score: 0.0 (better), indiv1 score: 0.5
-        self.assertEqual(pop.individuals[0].individual_id, 2)
-        self.assertEqual(pop.individuals[1].individual_id, 1)
+        self.assertEqual(apopulation.individuals[0].individual_id, 2)
+        self.assertEqual(apopulation.individuals[1].individual_id, 1)
 
     def test_evaluate_pending_individuals(self):
         indiv1 = pBGSK.Individual(1, [True, False])
         indiv2 = pBGSK.Individual(2, [True, True])
-        pop = pBGSK.Population(
+        apopulation = pBGSK.Population(
             [indiv1, indiv2],
             self.data_tuple,
             self.dataset_name,
@@ -135,7 +135,7 @@ class TestPBGSK(unittest.TestCase):
             knn_val=1,
         )
 
-        evaluated = pBGSK.evaluate_pending_individuals(pop)
+        evaluated = pBGSK.evaluate_pending_individuals(apopulation)
 
         self.assertEqual(evaluated, 2)
         self.assertEqual(indiv1.score, 0.5)
@@ -143,37 +143,37 @@ class TestPBGSK(unittest.TestCase):
 
     def test_dimension_distribution(self):
         # Using a larger dummy population to test distribution
-        pop = pBGSK.Population(
+        apopulation = pBGSK.Population(
             [], self.data_tuple, self.dataset_name, self.columns_names, knn_val=1
         )
-        pop.individuals = [pBGSK.Individual(1, [True, True])]
-        pop.nfe = 0
-        pop.knowledge = 0.95
+        apopulation.individuals = [pBGSK.Individual(1, [True, True])]
+        apopulation.nfe = 0
+        apopulation.knowledge = 0.95
 
         nfe_total = 100
-        diff = pBGSK.dimension_distribution(pop, nfe_total)  # esse diff ai é paia
+        diff = pBGSK.dimension_distribution(apopulation, nfe_total)  # esse diff ai é paia
         # d=2. (1 - 0/100)^0.95 = 1.0. d_junior = min(round(2*1), 1) = 1.
-        self.assertEqual(pop.d_junior, 1)
-        self.assertEqual(pop.d_senior, 1)
+        self.assertEqual(apopulation.d_junior, 1)
+        self.assertEqual(apopulation.d_senior, 1)
 
         # After some NFE
-        pop.nfe = 50
+        apopulation.nfe = 50
         # (1 - 50/100)^0.95 = 0.5^0.95 approx 0.517
         # d_junior = min(round(2*0.517), 1) = 1.
-        pBGSK.dimension_distribution(pop, nfe_total)
-        self.assertEqual(pop.d_junior, 1)
+        pBGSK.dimension_distribution(apopulation, nfe_total)
+        self.assertEqual(apopulation.d_junior, 1)
 
     def test_dimension_classification(self):
-        pop = pBGSK.Population(
+        apopulation = pBGSK.Population(
             [], self.data_tuple, self.dataset_name, self.columns_names, knn_val=1
         )
-        pop.individuals = [pBGSK.Individual(1, [True, True])]
+        apopulation.individuals = [pBGSK.Individual(1, [True, True])]
 
-        pBGSK.dimension_classification(pop, nfe_total=100)
+        pBGSK.dimension_classification(apopulation, nfe_total=100)
 
-        self.assertIsNotNone(pop.junior_features)
-        self.assertIsNotNone(pop.senior_features)
-        np.testing.assert_array_equal(pop.junior_features + pop.senior_features, [1, 1])
+        self.assertIsNotNone(apopulation.junior_features)
+        self.assertIsNotNone(apopulation.senior_features)
+        np.testing.assert_array_equal(apopulation.junior_features + apopulation.senior_features, [1, 1])
 
     def test_beginner_gsk_and_intermediate_gsk(self):
         # We need a population of at least 3 to run GSK safely (since it uses t-1 and t+1)
@@ -182,50 +182,50 @@ class TestPBGSK(unittest.TestCase):
         indiv1 = pBGSK.Individual(1, [True, True])
         indiv2 = pBGSK.Individual(2, [False, True])
 
-        pop = pBGSK.Population(
+        apopulation = pBGSK.Population(
             [indiv0, indiv1, indiv2],
             self.data_tuple,
             self.dataset_name,
             self.columns_names,
             knn_val=1,
         )
-        pop.junior_features = np.array([1, 0])
-        pop.senior_features = np.array([0, 1])
+        apopulation.junior_features = np.array([1, 0])
+        apopulation.senior_features = np.array([0, 1])
 
         # Pre-calculate scores
-        for ind in pop.individuals:
-            pBGSK.calculate_population_fitness(pop, ind)
+        for ind in apopulation.individuals:
+            pBGSK.calculate_population_fitness(apopulation, ind)
 
-        pBGSK.beginner_gsk(pop)
-        pBGSK.intermediate_gsk(pop)
+        pBGSK.beginner_gsk(apopulation)
+        pBGSK.intermediate_gsk(apopulation)
 
         # Just check if it runs and maintains feature types
-        secondindividual = pop[1]
+        secondindividual = apopulation[1]
         self.assertIsInstance(secondindividual[0], (bool, np.bool_))
 
     def test_population_reduction(self):
-        pop = pBGSK.Population(
+        apopulation = pBGSK.Population(
             [], self.data_tuple, self.dataset_name, self.columns_names, knn_val=1
         )
-        pop.individuals = [pBGSK.Individual(i, [True, True]) for i in range(20)]
-        pop.len = 20
-        # Initialize pop.df for population_reduction to work
-        pBGSK.get_population_dataframe(pop)
+        apopulation.individuals = [pBGSK.Individual(i, [True, True]) for i in range(20)]
+        apopulation.len = 20
+        # Initialize apopulation.df for population_reduction to work
+        pBGSK.get_population_dataframe(apopulation)
 
         # Force a reduction
-        pBGSK.population_reduction(pop, nfe_total=100, low_b=0.5, high_b=0.6)
+        pBGSK.population_reduction(apopulation, nfe_total=100, low_b=0.5, high_b=0.6)
         # nfe=0. np_new = int((0.5*20 - 0.6*20) * 0 + 0.6*20) = 12.
-        self.assertEqual(pop.len, 12)
-        self.assertEqual(len(pop.individuals), 12)
+        self.assertEqual(apopulation.len, 12)
+        self.assertEqual(len(apopulation.individuals), 12)
 
     def test_get_population_dataframe(self):
         indiv = pBGSK.Individual(1, [True, False])
-        pop = pBGSK.Population(
+        apopulation = pBGSK.Population(
             [indiv], self.data_tuple, self.dataset_name, self.columns_names, knn_val=1
         )
-        pBGSK.calculate_population_fitness(pop, indiv)
+        pBGSK.calculate_population_fitness(apopulation, indiv)
 
-        df = pBGSK.get_population_dataframe(pop)
+        df = pBGSK.get_population_dataframe(apopulation)
         self.assertEqual(len(df), 1)
         self.assertIn("score", df.columns)
         self.assertIn("n_features", df.columns)
@@ -233,7 +233,7 @@ class TestPBGSK(unittest.TestCase):
         self.assertEqual(df.loc[0, "n_features"], 1)
 
     def test_population_creation(self):
-        pop = pBGSK.population_creation(
+        apopulation = pBGSK.population_creation(
             num_population=10,
             lower_k=1,
             upper_k=2,
@@ -242,13 +242,13 @@ class TestPBGSK(unittest.TestCase):
             columns_names=self.columns_names,
             knn_val=1,
         )
-        self.assertEqual(pop.len, 10)
-        self.assertEqual(len(pop.individuals), 10)
-        self.assertEqual(pop.data_set_name, self.dataset_name)
+        self.assertEqual(apopulation.len, 10)
+        self.assertEqual(len(apopulation.individuals), 10)
+        self.assertEqual(apopulation.data_set_name, self.dataset_name)
 
     def test_feature_selection_smoke_test(self):
         # End-to-end run with small parameters
-        pop, best_features, best_score = pBGSK.feature_selection(
+        apopulation, best_features, best_score = pBGSK.feature_selection(
             data_tuple=self.data_tuple,
             num_population=15,  # > 12 to run iterations
             nfe_total=50,
@@ -275,7 +275,7 @@ class TestPBGSK(unittest.TestCase):
             )
 
     def test_feature_selection_keeps_running_at_minimum_population(self):
-        pop, best_features, best_score = pBGSK.feature_selection(
+        apopulation, best_features, best_score = pBGSK.feature_selection(
             data_tuple=self.data_tuple,
             num_population=20,
             nfe_total=200,
@@ -287,8 +287,8 @@ class TestPBGSK(unittest.TestCase):
             time_limit=5.0,
         )
 
-        self.assertEqual(pop.len, 12)
-        self.assertGreaterEqual(pop.nfe, 200)
+        self.assertEqual(apopulation.len, 12)
+        self.assertGreaterEqual(apopulation.nfe, 200)
         self.assertIsNotNone(best_features)
         self.assertLessEqual(best_score, 2.0)
 

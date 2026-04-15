@@ -243,24 +243,24 @@ class Population:
         raise ValueError("doidao mano")
 
 
-def calculate_population_fitness(pop: Population, individual: Individual):
+def calculate_population_fitness(apopulation: Population, individual: Individual):
     """
     Calculate and update the fitness of a specific individual within a population.
 
     Parameters
     ----------
-    pop : Population
+    apopulation : Population
         The population context providing the evaluator.
     individual : Individual
         The individual whose fitness needs to be updated.
     """
-    score, acc = pop.evaluator.calculate_fitness(individual.features)
+    score, acc = apopulation.evaluator.calculate_fitness(individual.features)
     individual.score = score
     individual.acc = acc
     # individual.number_of_features = np.sum(individual.features)
 
 
-def evaluate_population(pop: Population) -> int:
+def evaluate_population(apopulation: Population) -> int:
     """
     Evaluate every individual in the population.
 
@@ -269,12 +269,12 @@ def evaluate_population(pop: Population) -> int:
     int
         Number of fitness evaluations performed.
     """
-    for indiv in pop.individuals:
-        calculate_population_fitness(pop, indiv)
-    return len(pop.individuals)
+    for indiv in apopulation.individuals:
+        calculate_population_fitness(apopulation, indiv)
+    return len(apopulation.individuals)
 
 
-def evaluate_pending_individuals(pop: Population) -> int:
+def evaluate_pending_individuals(apopulation: Population) -> int:
     """
     Evaluate only individuals that still have no computed fitness.
 
@@ -284,25 +284,25 @@ def evaluate_pending_individuals(pop: Population) -> int:
         Number of fitness evaluations performed.
     """
     evaluated = 0
-    for indiv in pop.individuals:
+    for indiv in apopulation.individuals:
         if indiv.score == 2.0 and np.sum(indiv.features) > 0:
-            calculate_population_fitness(pop, indiv)
+            calculate_population_fitness(apopulation, indiv)
             evaluated += 1
     return evaluated
 
 
-def _avalition_checker(pop: Population) -> int:
+def _avalition_checker(apopulation: Population) -> int:
     """Backward-compatible alias for pending population evaluation."""
-    return evaluate_pending_individuals(pop)
+    return evaluate_pending_individuals(apopulation)
 
 
-def sort_population(pop: Population, t_sort: str = "fitness"):
+def sort_population(apopulation: Population, t_sort: str = "fitness"):
     """
     Sort the population based on fitness or accuracy.
 
     Parameters
     ----------
-    pop : Population
+    apopulation : Population
         The population to be sorted.
     t_sort : {"fitness", "accuracy"}, default="fitness"
         The metric used for sorting. "fitness" sorts in ascending order
@@ -315,24 +315,24 @@ def sort_population(pop: Population, t_sort: str = "fitness"):
         If t_sort is not "fitness" or "accuracy".
     """
     if t_sort == "fitness":
-        pop.individuals.sort(key=lambda ind: ind.score)
-        if pop.df is not None:
-            pop.df.sort_values("score", ascending=True, inplace=True)
+        apopulation.individuals.sort(key=lambda ind: ind.score)
+        if apopulation.df is not None:
+            apopulation.df.sort_values("score", ascending=True, inplace=True)
     elif t_sort == "accuracy":
-        pop.individuals.sort(key=lambda ind: ind.acc, reverse=True)
-        if pop.df is not None:
-            pop.df.sort_values("acc", ascending=False, inplace=True)
+        apopulation.individuals.sort(key=lambda ind: ind.acc, reverse=True)
+        if apopulation.df is not None:
+            apopulation.df.sort_values("acc", ascending=False, inplace=True)
     else:
         raise ValueError("Tipo de sort invalido. Use 'fitness' ou 'accuracy'.")
 
 
-def dimension_distribution(pop: Population, nfe_total: int) -> int:
+def dimension_distribution(apopulation: Population, nfe_total: int) -> int:
     """
     Calculate the distribution of features between Junior and Senior stages.
 
     Parameters
     ----------
-    pop : Population
+    apopulation : Population
         The population to update.
     nfe_total : int
         The total maximum number of function evaluations allowed.
@@ -342,42 +342,42 @@ def dimension_distribution(pop: Population, nfe_total: int) -> int:
     int
         The difference between the previous and new Junior dimension counts.
     """
-    d = len(pop.individuals[0].features)
-    novo_d_junior = min(round(d * (1 - pop.nfe / nfe_total) ** pop.knowledge), d - 1)
+    d = len(apopulation.individuals[0].features)
+    novo_d_junior = min(round(d * (1 - apopulation.nfe / nfe_total) ** apopulation.knowledge), d - 1)
     novo_d_senior = d - novo_d_junior
-    diff = pop.d_junior - novo_d_junior
+    diff = apopulation.d_junior - novo_d_junior
 
-    pop.d_junior = novo_d_junior
-    pop.d_senior = novo_d_senior
+    apopulation.d_junior = novo_d_junior
+    apopulation.d_senior = novo_d_senior
 
     return diff
 
 
-def dimension_classification(pop: Population, nfe_total: int):
+def dimension_classification(apopulation: Population, nfe_total: int):
     """
     Assign specific features to Junior or Senior categories.
 
     Parameters
     ----------
-    pop : Population
+    apopulation : Population
         The population to update.
     nfe_total : int
         The total maximum number of function evaluations allowed.
     """
-    d = len(pop.individuals[0].features)
+    d = len(apopulation.individuals[0].features)
 
-    if pop.d_junior == 0:
-        dimension_distribution(pop, nfe_total)
-        idxs = np.array(random.sample(range(0, d), pop.d_junior), dtype=int)
+    if apopulation.d_junior == 0:
+        dimension_distribution(apopulation, nfe_total)
+        idxs = np.array(random.sample(range(0, d), apopulation.d_junior), dtype=int)
 
-        pop.junior_features = np.zeros(d, dtype=int)
+        apopulation.junior_features = np.zeros(d, dtype=int)
         if idxs.size > 0:
-            pop.junior_features[idxs] = 1
-        pop.senior_features = np.ones(d, dtype=int) - pop.junior_features
+            apopulation.junior_features[idxs] = 1
+        apopulation.senior_features = np.ones(d, dtype=int) - apopulation.junior_features
     else:
-        diff = dimension_distribution(pop, nfe_total)
-        jf = pop.junior_features.copy()
-        sf = pop.senior_features.copy()
+        diff = dimension_distribution(apopulation, nfe_total)
+        jf = apopulation.junior_features.copy()
+        sf = apopulation.senior_features.copy()
 
         while diff > 0:
             wh = np.squeeze(np.where(jf > 0))
@@ -388,31 +388,31 @@ def dimension_classification(pop: Population, nfe_total: int):
             sf[idx_r] = 1
             diff -= 1
 
-        pop.junior_features = jf
-        pop.senior_features = sf
+        apopulation.junior_features = jf
+        apopulation.senior_features = sf
 
 
-def beginner_gsk(pop: Population, knowledge_ratio: float = 0.95):
+def beginner_gsk(apopulation: Population, knowledge_ratio: float = 0.95):
     """
     Apply the Junior (Beginner) stage knowledge sharing rules.
 
     Parameters
     ----------
-    pop : Population
+    apopulation : Population
         The population to evolve.
     knowledge_ratio : float, default=0.95
         Probability that an individual will share/gain knowledge in a specific
         dimension.
     """
-    for t_idx in range(1, pop.len - 1):
-        for dimension in np.where(pop.junior_features > 0)[0]:
+    for t_idx in range(1, apopulation.len - 1):
+        for dimension in np.where(apopulation.junior_features > 0)[0]:
             if random.random() < knowledge_ratio:
-                rand_idx = random.randint(0, pop.len - 1)
-                rand_indiv = pop.individuals[rand_idx]
-                xt = pop.individuals[t_idx]
+                rand_idx = random.randint(0, apopulation.len - 1)
+                rand_indiv = apopulation.individuals[rand_idx]
+                xt = apopulation.individuals[t_idx]
 
-                t_prev = pop.individuals[t_idx - 1]
-                t_next = pop.individuals[t_idx + 1]
+                t_prev = apopulation.individuals[t_idx - 1]
+                t_next = apopulation.individuals[t_idx + 1]
                 influence(
                     individual=xt,
                     better=t_prev,
@@ -422,28 +422,28 @@ def beginner_gsk(pop: Population, knowledge_ratio: float = 0.95):
                 )
 
 
-def intermediate_gsk(pop: Population, knowledge_ratio: float = 0.95):
+def intermediate_gsk(apopulation: Population, knowledge_ratio: float = 0.95):
     """
     Apply the Senior (Intermediate) stage knowledge sharing rules.
 
     Parameters
     ----------
-    pop : Population
+    apopulation : Population
         The population to evolve.
     knowledge_ratio : float, default=0.95
         Probability that an individual will share/gain knowledge in a specific
         dimension.
     """
-    len_p = max(1, int(pop.len * pop.partition))
+    len_p = max(1, int(apopulation.len * apopulation.partition))
 
-    for t_idx in range(1, pop.len - 1):
-        for dimension in np.where(pop.senior_features > 0)[0]:
+    for t_idx in range(1, apopulation.len - 1):
+        for dimension in np.where(apopulation.senior_features > 0)[0]:
             if random.random() < knowledge_ratio:
-                xt = pop.individuals[t_idx]
+                xt = apopulation.individuals[t_idx]
 
-                best_x = pop.individuals[random.randint(0, len_p - 1)]
-                middle_x = pop.individuals[random.randint(len_p, pop.len - len_p - 1)]
-                worst_x = pop.individuals[random.randint(pop.len - len_p, pop.len - 1)]
+                best_x = apopulation.individuals[random.randint(0, len_p - 1)]
+                middle_x = apopulation.individuals[random.randint(len_p, apopulation.len - len_p - 1)]
+                worst_x = apopulation.individuals[random.randint(apopulation.len - len_p, apopulation.len - 1)]
 
                 influence(
                     individual=xt,
@@ -455,14 +455,14 @@ def intermediate_gsk(pop: Population, knowledge_ratio: float = 0.95):
 
 
 def population_reduction(
-    pop: Population, nfe_total: int, low_b: float = 0.9, high_b: float = 0.95
+    apopulation: Population, nfe_total: int, low_b: float = 0.9, high_b: float = 0.95
 ) -> bool:
     """
     Perform Linear Population Size Reduction (LPSR).
 
     Parameters
     ----------
-    pop : Population
+    apopulation : Population
         The population to reduce.
     nfe_total : int
         Total maximum number of function evaluations allowed.
@@ -476,12 +476,12 @@ def population_reduction(
     bool
         True if the population was not reduced, False otherwise.
     """
-    np_min = pop.len * low_b
-    np_max = pop.len * high_b
-    old_len = pop.len
-    np_new = int((np_min - np_max) * (pop.nfe / nfe_total) + np_max)
+    np_min = apopulation.len * low_b
+    np_max = apopulation.len * high_b
+    old_len = apopulation.len
+    np_new = int((np_min - np_max) * (apopulation.nfe / nfe_total) + np_max)
 
-    km = pop.df.loc[:, ["score", "n_features", "acc"]].mean().to_frame().T
+    km = apopulation.df.loc[:, ["score", "n_features", "acc"]].mean().to_frame().T
     km.rename(
         columns={
             "score": "mean_score",
@@ -490,25 +490,25 @@ def population_reduction(
         },
         inplace=True,
     )
-    km["nfe"] = pop.nfe
-    pop.geng_df = pd.concat([km, pop.geng_df], ignore_index=True)
+    km["nfe"] = apopulation.nfe
+    apopulation.geng_df = pd.concat([km, apopulation.geng_df], ignore_index=True)
 
     if np_new >= 12 and np_new < old_len:
         amount_to_pop = old_len - np_new
         for _ in range(amount_to_pop):
-            pop.individuals.pop()
-        pop.len = len(pop.individuals)
+            apopulation.individuals.apopulation()
+        apopulation.len = len(apopulation.individuals)
         return False
     return True
 
 
-def get_population_dataframe(pop: Population) -> pd.DataFrame:
+def get_population_dataframe(apopulation: Population) -> pd.DataFrame:
     """
     Create a DataFrame representing the current population state.
 
     Parameters
     ----------
-    pop : Population
+    apopulation : Population
         The population to extract data from.
 
     Returns
@@ -517,27 +517,27 @@ def get_population_dataframe(pop: Population) -> pd.DataFrame:
         A DataFrame where rows are individuals and columns are features, scores,
         counts, and accuracy.
     """
-    lista_features = [indiv.features.astype(np.int8) for indiv in pop.individuals]
-    pop_df = pd.DataFrame(lista_features, columns=pop.columns_names)
+    lista_features = [indiv.features.astype(np.int8) for indiv in apopulation.individuals]
+    pop_df = pd.DataFrame(lista_features, columns=apopulation.columns_names)
 
-    pop_df["score"] = [indiv.score for indiv in pop.individuals]
-    pop_df["n_features"] = [np.sum(indiv.features) for indiv in pop.individuals]
-    pop_df["acc"] = [indiv.acc for indiv in pop.individuals]
+    pop_df["score"] = [indiv.score for indiv in apopulation.individuals]
+    pop_df["n_features"] = [np.sum(indiv.features) for indiv in apopulation.individuals]
+    pop_df["acc"] = [indiv.acc for indiv in apopulation.individuals]
 
-    pop.df = pop_df
+    apopulation.df = pop_df
     return pop_df
 
 
-def plot_population_score(pop: Population):
+def plot_population_score(apopulation: Population):
     """
     Visualize the distribution of scores across different features.
 
     Parameters
     ----------
-    pop : Population
+    apopulation : Population
         The population to visualize.
     """
-    df_melted = pop.df.melt(
+    df_melted = apopulation.df.melt(
         id_vars=["score", "n_features", "acc"],
         var_name="feature",
         value_name="is_selected",
@@ -629,7 +629,7 @@ def population_creation(
         )
         population.append(indiv)
 
-    pop = Population(
+    apopulation = Population(
         population,
         data_tuple=data_tuple,
         data_set_name=data_set_name,
@@ -637,7 +637,7 @@ def population_creation(
         knowledge=knowledge,
         knn_val=knn_val,
     )
-    return pop
+    return apopulation
 
 
 def feature_selection(
@@ -681,7 +681,7 @@ def feature_selection(
 
     Returns
     -------
-    pop : Population
+    apopulation : Population
         The final population state.
     best_individual_features : np.ndarray (bool)
         The feature mask of the best individual found.
@@ -714,7 +714,7 @@ def feature_selection(
     if time_limit <= 0:
         raise ValueError("time_limit must be greater than 0.")
 
-    pop = population_creation(
+    apopulation = population_creation(
         num_population=num_population,
         lower_k=lower_k,
         upper_k=upper_k,
@@ -724,32 +724,32 @@ def feature_selection(
         knowledge=k,
         knn_val=knn_val,
     )
-    pop.partition = p
+    apopulation.partition = p
 
-    pop.nfe += evaluate_population(pop)
+    apopulation.nfe += evaluate_population(apopulation)
 
-    get_population_dataframe(pop)
-    sort_population(pop, t_sort="fitness")
+    get_population_dataframe(apopulation)
+    sort_population(apopulation, t_sort="fitness")
 
-    best_score = pop[0].score
-    best_individual_features = pop[0].features.copy()
+    best_score = apopulation[0].score
+    best_individual_features = apopulation[0].features.copy()
     start_time = time.time()
 
-    while pop.nfe < nfe_total and (time.time() - start_time) < time_limit:
-        dimension_classification(pop, nfe_total=nfe_total)
-        beginner_gsk(pop)
-        intermediate_gsk(pop)
+    while apopulation.nfe < nfe_total and (time.time() - start_time) < time_limit:
+        dimension_classification(apopulation, nfe_total=nfe_total)
+        beginner_gsk(apopulation)
+        intermediate_gsk(apopulation)
 
-        pop.nfe += evaluate_population(pop)
+        apopulation.nfe += evaluate_population(apopulation)
 
-        get_population_dataframe(pop)
-        sort_population(pop, t_sort="fitness")
+        get_population_dataframe(apopulation)
+        sort_population(apopulation, t_sort="fitness")
 
-        current_best = pop[0]
+        current_best = apopulation[0]
         if current_best.score < best_score:
             best_score = current_best.score
             best_individual_features = current_best.features.copy()
 
-        population_reduction(pop, nfe_total=nfe_total)
+        population_reduction(apopulation, nfe_total=nfe_total)
 
-    return pop, best_individual_features, best_score
+    return apopulation, best_individual_features, best_score
