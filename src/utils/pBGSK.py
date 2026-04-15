@@ -66,7 +66,11 @@ class Individual:
         self.df = None
     def __len__(self):
         return np.sum(self.features)
-
+    def __getitem__(self,idx):
+        return self.features[idx]
+    def __setitem__(self,idx,value):
+        self.features[idx] = value
+        
 
 def influence(
     individual: Individual,
@@ -76,14 +80,14 @@ def influence(
     dimension,
     kf: float = 0.95,
 ):
-    current_value = int(individual.features[dimension])
+    current_value = int(individual[dimension])
 
     if k_factor(kf) == 0:
-        return individual.features[dimension]
+        return individual[dimension]
 
-    better_value = int(better.features[dimension])
-    worse_value = int(worse.features[dimension])
-    random_value = int(rand_indiv.features[dimension])
+    better_value = int(better[dimension])
+    worse_value = int(worse[dimension])
+    random_value = int(rand_indiv[dimension])
 
     if individual.score > rand_indiv.score:
         feature_influence = current_value + (
@@ -94,8 +98,8 @@ def influence(
             better_value - worse_value + current_value - random_value
         )
 
-    individual.features[dimension] = feature_influence > 0
-    return individual.features[dimension]
+    individual[dimension] = feature_influence > 0
+    return individual[dimension]
 
 
 class FeatureSelectorEvaluator:
@@ -225,6 +229,14 @@ class Population:
         self.knowledge = knowledge
         self.partition = partition
         self.nfe = 0
+    def __len__(self):
+        return np.len(self.individuals)
+    def __getitem__(self,idx):
+        return self.individuals[idx]
+    def __setitem__(self,idx,value):
+        raise ValueError("doidao mano")
+        
+
 
 
 def calculate_population_fitness(pop: Population, individual: Individual):

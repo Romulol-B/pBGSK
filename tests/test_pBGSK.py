@@ -70,7 +70,7 @@ class TestPBGSK(unittest.TestCase):
                         kf=1,
                     )
 
-                    self.assertEqual(int(individual.features[0]), expected)
+                    self.assertEqual(int(individual[0]), expected)
         
 
     def test_feature_selector_evaluator(self):
@@ -173,7 +173,7 @@ class TestPBGSK(unittest.TestCase):
         pBGSK.intermediate_gsk(pop)
         
         # Just check if it runs and maintains feature types
-        self.assertIsInstance(pop.individuals[1].features[0], (bool, np.bool_))
+        self.assertIsInstance([pop.individuals[1]][0], (bool, np.bool_))
 
     def test_population_reduction(self):
         pop = pBGSK.Population([], self.data_tuple, self.dataset_name, self.columns_names, knn_val=1)
