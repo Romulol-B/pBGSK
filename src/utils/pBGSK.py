@@ -496,7 +496,7 @@ def population_reduction(
     if np_new >= 12 and np_new < old_len:
         amount_to_pop = old_len - np_new
         for _ in range(amount_to_pop):
-            apopulation.individuals.apopulation()
+            apopulation.individuals.pop()
         apopulation.len = len(apopulation.individuals)
         return False
     return True
