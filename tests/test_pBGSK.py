@@ -132,7 +132,7 @@ class TestPBGSK(unittest.TestCase):
         pop.knowledge = 0.95
         
         nfe_total = 100
-        diff = pBGSK.dimension_distribution(pop, nfe_total)
+        diff = pBGSK.dimension_distribution(pop, nfe_total)#esse diff ai é paia
         # d=2. (1 - 0/100)^0.95 = 1.0. d_junior = min(round(2*1), 1) = 1.
         self.assertEqual(pop.d_junior, 1)
         self.assertEqual(pop.d_senior, 1)
@@ -173,7 +173,8 @@ class TestPBGSK(unittest.TestCase):
         pBGSK.intermediate_gsk(pop)
         
         # Just check if it runs and maintains feature types
-        self.assertIsInstance([pop.individuals[1]][0], (bool, np.bool_))
+        secondIndividual = pop[1]
+        self.assertIsInstance(secondIndividual[0], (bool, np.bool_))
 
     def test_population_reduction(self):
         pop = pBGSK.Population([], self.data_tuple, self.dataset_name, self.columns_names, knn_val=1)
