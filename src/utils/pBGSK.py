@@ -64,13 +64,16 @@ class Individual:
         self.acc = 0.0
         self.score = 2.0
         self.df = None
+
     def __len__(self):
         return np.sum(self.features)
-    def __getitem__(self,idx):
+
+    def __getitem__(self, idx):
         return self.features[idx]
-    def __setitem__(self,idx,value):
+
+    def __setitem__(self, idx, value):
         self.features[idx] = value
-        
+
 
 def influence(
     individual: Individual,
@@ -229,14 +232,15 @@ class Population:
         self.knowledge = knowledge
         self.partition = partition
         self.nfe = 0
+
     def __len__(self):
         return np.len(self.individuals)
-    def __getitem__(self,idx):
-        return self.individuals[idx]
-    def __setitem__(self,idx,value):
-        raise ValueError("doidao mano")
-        
 
+    def __getitem__(self, idx):
+        return self.individuals[idx]
+
+    def __setitem__(self, idx, value):
+        raise ValueError("doidao mano")
 
 
 def calculate_population_fitness(pop: Population, individual: Individual):
@@ -253,7 +257,7 @@ def calculate_population_fitness(pop: Population, individual: Individual):
     score, acc = pop.evaluator.calculate_fitness(individual.features)
     individual.score = score
     individual.acc = acc
-    #individual.number_of_features = np.sum(individual.features)
+    # individual.number_of_features = np.sum(individual.features)
 
 
 def evaluate_population(pop: Population) -> int:
@@ -727,8 +731,8 @@ def feature_selection(
     get_population_dataframe(pop)
     sort_population(pop, t_sort="fitness")
 
-    best_score = pop.individuals[0].score
-    best_individual_features = pop.individuals[0].features.copy()
+    best_score = pop[0].score
+    best_individual_features = pop[0].features.copy()
     start_time = time.time()
 
     while pop.nfe < nfe_total and (time.time() - start_time) < time_limit:
@@ -741,7 +745,7 @@ def feature_selection(
         get_population_dataframe(pop)
         sort_population(pop, t_sort="fitness")
 
-        current_best = pop.individuals[0]
+        current_best = pop[0]
         if current_best.score < best_score:
             best_score = current_best.score
             best_individual_features = current_best.features.copy()
