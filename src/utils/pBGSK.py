@@ -156,7 +156,7 @@ class FeatureSelectorEvaluator:
         acc : np.float64
             The classification accuracy.
         """
-        number_of_features = len(self)
+        number_of_features = sum(features)
         if number_of_features == 0:
             return 2.0, 0.0
 

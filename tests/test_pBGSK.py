@@ -99,8 +99,8 @@ class TestPBGSK(unittest.TestCase):
         self.assertEqual(indiv.acc, 1.0)
         # Score: (1-1.0) + (1-1/2) = 0.5
         self.assertEqual(indiv.score, 0.5)
-        self.assertEqual(indiv.number_of_features, 1)
-
+        #self.assertEqual(indiv.number_of_features, 1)
+        self.assertEqual(len(indiv),1)
     def test_sort_population(self):
         indiv1 = pBGSK.Individual(1, [True, False])
         indiv2 = pBGSK.Individual(2, [True, True])
