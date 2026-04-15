@@ -64,7 +64,8 @@ class Individual:
         self.acc = 0.0
         self.score = 2.0
         self.df = None
-        self.number_of_features = 0
+    def __len__(self):
+        return np.sum(self.features)
 
 
 def influence(
@@ -155,7 +156,7 @@ class FeatureSelectorEvaluator:
         acc : np.float64
             The classification accuracy.
         """
-        number_of_features = np.sum(features)
+        number_of_features = len(self)
         if number_of_features == 0:
             return 2.0, 0.0
 
@@ -240,7 +241,7 @@ def calculate_population_fitness(pop: Population, individual: Individual):
     score, acc = pop.evaluator.calculate_fitness(individual.features)
     individual.score = score
     individual.acc = acc
-    individual.number_of_features = np.sum(individual.features)
+    #individual.number_of_features = np.sum(individual.features)
 
 
 def evaluate_population(pop: Population) -> int:

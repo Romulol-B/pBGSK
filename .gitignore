@@ -6,5 +6,5 @@ __pycache__/
 #experiments workflow
 utils/data_importer_n.ipynb
 AGENTS.md
-notebooks/expirements.ipynb
+notebooks\experiments.ipynb
 generate_notebook.py
