@@ -66,6 +66,7 @@ class Individual:
         self.df = None
         self.number_of_features = 0
 
+
 def influence(
     individual: Individual,
     better: Individual,
@@ -84,15 +85,15 @@ def influence(
     random_value = int(rand_indiv.features[dimension])
 
     if individual.score > rand_indiv.score:
-        xtk = current_value + (
+        feature_influence = current_value + (
             better_value - worse_value + random_value - current_value
         )
     else:
-        xtk = current_value + (
+        feature_influence = current_value + (
             better_value - worse_value + current_value - random_value
         )
 
-    individual.features[dimension] = xtk > 0
+    individual.features[dimension] = feature_influence > 0
     return individual.features[dimension]
 
 

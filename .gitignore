@@ -5,6 +5,6 @@ __pycache__/
 .venv
 #experiments workflow
 utils/data_importer_n.ipynb
-GEMINI.md
+AGENTS.md
 notebooks/expirements.ipynb
 generate_notebook.py
