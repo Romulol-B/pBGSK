@@ -16,6 +16,7 @@ import pandas as pd
 import seaborn as sns
 from sklearn.metrics import accuracy_score
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import KFold
 
 
 def k_factor(kf: float = 0.95) -> int:
@@ -24,7 +25,7 @@ def k_factor(kf: float = 0.95) -> int:
 
     Returns 1 if a random value is greater than or equal to the knowledge factor,
     otherwise returns 0. This is used to introduce randomness in the GSK update
-    rules.
+    rules
 
     Parameters
     ----------
@@ -103,6 +104,13 @@ def influence(
 
     individual[dimension] = feature_influence > 0
     return individual[dimension]
+
+
+def _cross_validation(
+    dataset: pd.DataFrame, cross_validation_splits: int, test_proportion: float
+):
+    kf = kFold(n_splits=cross_validation_splits)
+    return kf.get_n_splits()
 
 
 class FeatureSelectorEvaluator:
@@ -343,7 +351,9 @@ def dimension_distribution(apopulation: Population, nfe_total: int) -> int:
         The difference between the previous and new Junior dimension counts.
     """
     d = len(apopulation.individuals[0].features)
-    novo_d_junior = min(round(d * (1 - apopulation.nfe / nfe_total) ** apopulation.knowledge), d - 1)
+    novo_d_junior = min(
+        round(d * (1 - apopulation.nfe / nfe_total) ** apopulation.knowledge), d - 1
+    )
     novo_d_senior = d - novo_d_junior
     diff = apopulation.d_junior - novo_d_junior
 
@@ -373,7 +383,9 @@ def dimension_classification(apopulation: Population, nfe_total: int):
         apopulation.junior_features = np.zeros(d, dtype=int)
         if idxs.size > 0:
             apopulation.junior_features[idxs] = 1
-        apopulation.senior_features = np.ones(d, dtype=int) - apopulation.junior_features
+        apopulation.senior_features = (
+            np.ones(d, dtype=int) - apopulation.junior_features
+        )
     else:
         diff = dimension_distribution(apopulation, nfe_total)
         jf = apopulation.junior_features.copy()
@@ -442,8 +454,12 @@ def intermediate_gsk(apopulation: Population, knowledge_ratio: float = 0.95):
                 xt = apopulation.individuals[t_idx]
 
                 best_x = apopulation.individuals[random.randint(0, len_p - 1)]
-                middle_x = apopulation.individuals[random.randint(len_p, apopulation.len - len_p - 1)]
-                worst_x = apopulation.individuals[random.randint(apopulation.len - len_p, apopulation.len - 1)]
+                middle_x = apopulation.individuals[
+                    random.randint(len_p, apopulation.len - len_p - 1)
+                ]
+                worst_x = apopulation.individuals[
+                    random.randint(apopulation.len - len_p, apopulation.len - 1)
+                ]
 
                 influence(
                     individual=xt,
@@ -476,6 +492,8 @@ def population_reduction(
     bool
         True if the population was not reduced, False otherwise.
     """
+    # def __new_population_size(low_b,high_b):
+
     np_min = apopulation.len * low_b
     np_max = apopulation.len * high_b
     old_len = apopulation.len
@@ -517,7 +535,9 @@ def get_population_dataframe(apopulation: Population) -> pd.DataFrame:
         A DataFrame where rows are individuals and columns are features, scores,
         counts, and accuracy.
     """
-    lista_features = [indiv.features.astype(np.int8) for indiv in apopulation.individuals]
+    lista_features = [
+        indiv.features.astype(np.int8) for indiv in apopulation.individuals
+    ]
     pop_df = pd.DataFrame(lista_features, columns=apopulation.columns_names)
 
     pop_df["score"] = [indiv.score for indiv in apopulation.individuals]
@@ -640,6 +660,10 @@ def population_creation(
     return apopulation
 
 
+def get_best_features(apopulation: Population):
+    return apopulation[0].features
+
+
 def feature_selection(
     data_tuple: tuple,
     num_population: int,
@@ -733,6 +757,7 @@ def feature_selection(
 
     best_score = apopulation[0].score
     best_individual_features = apopulation[0].features.copy()
+
     start_time = time.time()
 
     while apopulation.nfe < nfe_total and (time.time() - start_time) < time_limit:
