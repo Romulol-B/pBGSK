@@ -74,7 +74,11 @@ class Individual:
 
     def __setitem__(self, idx, value):
         self.features[idx] = value
-
+    def __repr__(self):
+        return (f"individual :{self.individual_id}\n"
+                f" Score:{self.score} and Accuracy:{self.acc}"
+                f"Number of Features:{np.sum(self.features)}"
+                f"Binary feature vector:{self.features+0}")#conversion to int.
 
 def influence(
     individual: Individual,

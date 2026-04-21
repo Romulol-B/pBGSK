@@ -3,8 +3,8 @@ from pandas import DataFrame
 
 DATASET_REGISTRY = {
     "tic_tac_toe_endgame": 101,
-    "breast_cancer": 15,
-    "wine_quality": 109,
+    #"breast_cancer": 15,
+    #"wine_quality": 109,
     "heart_disease": 45,
     "house_votes": 105,
     "zoo": 111,
@@ -12,20 +12,20 @@ DATASET_REGISTRY = {
     "hepatitis": 46,
     # medium size datasets
     "waveform": 107,
-    "german_credit": 31,
+    #"german_credit": 31,
     "wdbc": 857,
     "ionosphere": 52,
     "dermatology": 33,
-    "soybean": 91,
-    "lung_cancer": 62,
-    "spambase": 94,
+    #"soybean": 91,
+    #"lung_cancer": 62,
+    #"spambase": 94,
     "sonar": 151,  # ,
     # large size datasets
     # "hill_valley":  106 , sem import direto
      "clean1":  189 ,# gallstone
-     "semeion":  49 ,
-     "arrhythmia":  148 ,
-     "cnae":  192
+     #"semeion":  49 ,
+     #"arrhythmia":  148 ,
+     #"cnae":  192
 }
 
 
