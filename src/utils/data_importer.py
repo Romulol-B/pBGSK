@@ -3,7 +3,7 @@ from pandas import DataFrame
 
 DATASET_REGISTRY = {
     "tic_tac_toe_endgame": 101,
-    #"breast_cancer": 15,
+    "breast_cancer": 15,
     #"wine_quality": 109,
     "heart_disease": 45,
     "house_votes": 105,

@@ -4,11 +4,17 @@ import pandas as pd
 import random
 import os
 import sys
+from sklearn.base import clone
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import GridSearchCV
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.pipeline import Pipeline
 
 # Add project root to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.utils import pBGSK
+from src.utils.data_importer import DATASET_REGISTRY
 
 
 class TestPBGSK(unittest.TestCase):
@@ -24,6 +30,24 @@ class TestPBGSK(unittest.TestCase):
         cls.data_tuple = (cls.X_train, cls.X_test, cls.y_train, cls.y_test)
         cls.columns_names = ["f1", "f2"]
         cls.dataset_name = "test_data"
+        cls.selector_X = pd.DataFrame(
+            [
+                [0, 0, 0, 1],
+                [0, 0, 1, 1],
+                [0, 1, 0, 1],
+                [0, 1, 1, 1],
+                [1, 0, 0, 0],
+                [1, 0, 1, 0],
+                [1, 1, 0, 0],
+                [1, 1, 1, 0],
+                [0, 0, 0, 0],
+                [0, 1, 0, 0],
+                [1, 0, 1, 1],
+                [1, 1, 1, 1],
+            ],
+            columns=["s1", "s2", "s3", "s4"],
+        )
+        cls.selector_y = pd.Series([0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1])
 
     def setUp(self):
         # Reset seeds for each test
@@ -124,6 +148,19 @@ class TestPBGSK(unittest.TestCase):
         self.assertEqual(apopulation.individuals[0].individual_id, 2)
         self.assertEqual(apopulation.individuals[1].individual_id, 1)
 
+    def test_population_len(self):
+        indiv1 = pBGSK.Individual(1, [True, False])
+        indiv2 = pBGSK.Individual(2, [True, True])
+        apopulation = pBGSK.Population(
+            [indiv1, indiv2],
+            self.data_tuple,
+            self.dataset_name,
+            self.columns_names,
+            knn_val=1,
+        )
+
+        self.assertEqual(len(apopulation), 2)
+
     def test_evaluate_pending_individuals(self):
         indiv1 = pBGSK.Individual(1, [True, False])
         indiv2 = pBGSK.Individual(2, [True, True])
@@ -162,6 +199,15 @@ class TestPBGSK(unittest.TestCase):
         # d_junior = min(round(2*0.517), 1) = 1.
         pBGSK.dimension_distribution(apopulation, nfe_total)
         self.assertEqual(apopulation.d_junior, 1)
+
+    def test_cross_validation_returns_split_count(self):
+        splits = pBGSK._cross_validation(
+            dataset=self.X_train,
+            cross_validation_splits=2,
+            test_proportion=0.2,
+        )
+
+        self.assertEqual(splits, 2)
 
     def test_dimension_classification(self):
         apopulation = pBGSK.Population(
@@ -274,7 +320,20 @@ class TestPBGSK(unittest.TestCase):
                 knn_val=1,
             )
 
-    def test_feature_selection_keeps_running_at_minimum_population(self):
+    def test_feature_selection_validates_nfe_total_against_population_size(self):
+        with self.assertRaises(ValueError):
+            pBGSK.feature_selection(
+                data_tuple=self.data_tuple,
+                num_population=13,
+                nfe_total=12,
+                lower_k=1,
+                upper_k=2,
+                columns_names=self.columns_names,
+                data_set_name=self.dataset_name,
+                knn_val=1,
+            )
+
+    def test_feature_selection_respects_evaluation_budget(self):
         apopulation, best_features, best_score = pBGSK.feature_selection(
             data_tuple=self.data_tuple,
             num_population=20,
@@ -288,9 +347,121 @@ class TestPBGSK(unittest.TestCase):
         )
 
         self.assertEqual(apopulation.len, 12)
-        self.assertGreaterEqual(apopulation.nfe, 200)
+        self.assertLessEqual(apopulation.nfe, 200)
         self.assertIsNotNone(best_features)
         self.assertLessEqual(best_score, 2.0)
+
+    def test_dataset_registry_contains_readme_example_dataset(self):
+        self.assertIn("breast_cancer", DATASET_REGISTRY)
+
+    def test_selector_fit_and_transform(self):
+        selector = pBGSK.PBGSKFeatureSelector(
+            population_size=13,
+            nfe_total=13,
+            lower_k=1,
+            upper_k=3,
+            cv=2,
+            random_state=7,
+        )
+
+        transformed = selector.fit_transform(self.selector_X, self.selector_y)
+
+        self.assertEqual(transformed.shape[0], len(self.selector_X))
+        self.assertEqual(transformed.shape[1], selector.n_features_selected_)
+        np.testing.assert_array_equal(
+            selector.get_support(),
+            selector._get_support_mask(),
+        )
+        self.assertTrue(hasattr(selector, "feature_names_in_"))
+
+    def test_selector_is_deterministic_with_random_state(self):
+        selector_1 = pBGSK.PBGSKFeatureSelector(
+            population_size=13,
+            nfe_total=13,
+            lower_k=1,
+            upper_k=3,
+            cv=2,
+            random_state=11,
+        )
+        selector_2 = pBGSK.PBGSKFeatureSelector(
+            population_size=13,
+            nfe_total=13,
+            lower_k=1,
+            upper_k=3,
+            cv=2,
+            random_state=11,
+        )
+
+        selector_1.fit(self.selector_X, self.selector_y)
+        selector_2.fit(self.selector_X, self.selector_y)
+
+        np.testing.assert_array_equal(
+            selector_1.get_support(),
+            selector_2.get_support(),
+        )
+        self.assertEqual(selector_1.best_fitness_, selector_2.best_fitness_)
+        self.assertEqual(selector_1.best_cv_score_, selector_2.best_cv_score_)
+
+    def test_selector_supports_clone(self):
+        selector = pBGSK.PBGSKFeatureSelector(
+            population_size=13,
+            nfe_total=13,
+            lower_k=1,
+            upper_k=3,
+            cv=2,
+            random_state=5,
+        )
+
+        cloned = clone(selector)
+
+        self.assertEqual(cloned.population_size, 13)
+        self.assertEqual(cloned.nfe_total, 13)
+        self.assertEqual(cloned.random_state, 5)
+
+    def test_selector_supports_pipeline_and_grid_search(self):
+        pipeline = Pipeline(
+            [
+                (
+                    "selector",
+                    pBGSK.PBGSKFeatureSelector(
+                        population_size=13,
+                        nfe_total=13,
+                        lower_k=1,
+                        upper_k=3,
+                        cv=2,
+                        random_state=3,
+                    ),
+                ),
+                ("classifier", KNeighborsClassifier(n_neighbors=1)),
+            ]
+        )
+        search = GridSearchCV(
+            pipeline,
+            param_grid={"selector__partition": [0.1, 0.2]},
+            cv=2,
+        )
+
+        search.fit(self.selector_X, self.selector_y)
+
+        self.assertIn("selector__partition", search.best_params_)
+        self.assertIsInstance(
+            search.best_estimator_.named_steps["selector"],
+            pBGSK.PBGSKFeatureSelector,
+        )
+
+    def test_selector_rejects_non_classifier_estimators(self):
+        selector = pBGSK.PBGSKFeatureSelector(
+            estimator=LinearRegression(),
+            population_size=13,
+            nfe_total=13,
+            lower_k=1,
+            upper_k=3,
+            cv=2,
+            random_state=3,
+        )
+
+        with self.assertRaises(ValueError):
+            selector.fit(self.selector_X, self.selector_y)
 
 
 if __name__ == "__main__":
