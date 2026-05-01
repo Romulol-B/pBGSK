@@ -148,6 +148,16 @@ class TestPBGSK(unittest.TestCase):
         self.assertEqual(apopulation.individuals[0].individual_id, 1)
         self.assertEqual(apopulation.individuals[1].individual_id, 2)
 
+    def test_new_population_size(self):
+        np_min = 12
+        np_max = 100
+        actual_nfe = 1
+        total_nfe = 3
+        result = 71
+        self.assertEqual(
+            pBGSK._new_population_size(
+                np_min=np_min, np_max=np_max, actual_nfe=actual_nfe, total_nfe=total_nfe
+        ) ,result)
     def test_population_len(self):
         indiv1 = pBGSK.Individual(1, [True, False])
         indiv2 = pBGSK.Individual(2, [True, True])
@@ -188,7 +198,9 @@ class TestPBGSK(unittest.TestCase):
         apopulation.knowledge = 0.95
 
         nfe_total = 100
-        diff = pBGSK.dimension_distribution(apopulation, nfe_total)  # esse diff ai é paia
+        diff = pBGSK.dimension_distribution(
+            apopulation, nfe_total
+        )  # esse diff ai é paia
         # d=2. (1 - 0/100)^0.95 = 1.0. d_junior = min(round(2*1), 1) = 1.
         self.assertEqual(apopulation.d_junior, 1)
         self.assertEqual(apopulation.d_senior, 1)
@@ -219,7 +231,9 @@ class TestPBGSK(unittest.TestCase):
 
         self.assertIsNotNone(apopulation.junior_features)
         self.assertIsNotNone(apopulation.senior_features)
-        np.testing.assert_array_equal(apopulation.junior_features + apopulation.senior_features, [1, 1])
+        np.testing.assert_array_equal(
+            apopulation.junior_features + apopulation.senior_features, [1, 1]
+        )
 
     def test_beginner_gsk_and_intermediate_gsk(self):
         # We need a population of at least 3 to run GSK safely (since it uses t-1 and t+1)
