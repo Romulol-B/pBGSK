@@ -28,13 +28,13 @@ def k_factor(kf: float = 1) -> int:
     """
     Stochastic knowledge factor multiplier.
 
-    Returns 1 if a random value is greater than or equal to the knowledge factor,
+    Returns 1 if a random value is less than or equal to the knowledge factor,
     otherwise returns 0. This is used to introduce randomness in the GSK update
     rules
 
     Parameters
     ----------
-    kf : float, default=0.95
+    kf : float, default=1
         The knowledge factor threshold.
 
     Returns
@@ -91,7 +91,7 @@ def influence(
     worse: Individual,
     rand_indiv: Individual,
     dimension,
-    kf: float = 0.95,
+    kf: float = 1,
 ):
     current_value = int(individual[dimension])
 
@@ -166,8 +166,8 @@ class FeatureSelectorEvaluator:
         """
         Calculate fitness score and accuracy for a given feature mask.
 
-        The fitness score is defined as:
-        score = (1 - accuracy) + (1 - (selected_features / total_features))
+        The fitness score follows the article objective:
+        score = gamma1 * (1 - accuracy) + (1 - gamma1) * feature_ratio
 
         Parameters
         ----------
@@ -181,9 +181,14 @@ class FeatureSelectorEvaluator:
         acc : np.float64
             The classification accuracy.
         """
-        def _score_calculation(acc:np.float64,number_of_chosen_features,total_features,gamma1): 
-            feature_ratio = number_of_features / len(features)# me certificar que esta matematica faz sentido
-            return np.float64(gamma1*(1 - acc) + (1-gamma1)*feature_ratio) 
+        def _score_calculation(
+            acc: np.float64,
+            number_of_chosen_features: int,
+            total_features: int,
+            gamma1: float = 0.99,
+        ):
+            feature_ratio = number_of_chosen_features / total_features
+            return np.float64(gamma1 * (1 - acc) + (1 - gamma1) * feature_ratio)
 
         number_of_features = sum(features)
         if number_of_features == 0:
@@ -195,8 +200,8 @@ class FeatureSelectorEvaluator:
         self.classifier.fit(X_train_selected, self.y_train)
         y_pred = self.classifier.predict(X_test_selected)
 
-        acc = accuracy_score(self.y_test, y_pred)#extrair função
-        score = _score_calculation(acc,number_of_features,len(features)) 
+        acc = accuracy_score(self.y_test, y_pred)
+        score = _score_calculation(acc, number_of_features, len(features))
         return score, np.float64(acc)
 
 
@@ -576,8 +581,13 @@ def population_reduction(
     bool
         True if the population was not reduced, False otherwise.
     """
-    def _new_population_size(actual_nfe,total_nfe,np_max:int,np_min:int =12):
-        return int((np_min - np_max) * (actual_nfe / nfe_total) + np_max)
+    def _new_population_size(
+        actual_nfe: int,
+        total_nfe: int,
+        np_max: int,
+        np_min: int = 12,
+    ):
+        return round((np_min - np_max) * (actual_nfe / total_nfe) + np_max)
 
     km = apopulation.df.loc[:, ["score", "n_features", "acc"]].mean().to_frame().T
     km.rename(
@@ -590,8 +600,12 @@ def population_reduction(
     )
     km["nfe"] = apopulation.nfe
     apopulation.geng_df = pd.concat([km, apopulation.geng_df], ignore_index=True)
-    np_new = _new_population_size(np_max=apopulation.initial_population)
-    old_len =len(apopulation)  
+    np_new = _new_population_size(
+        actual_nfe=apopulation.nfe,
+        total_nfe=nfe_total,
+        np_max=apopulation.initial_population_size,
+    )
+    old_len = len(apopulation)
     if np_new >= 12 and np_new < old_len:
         amount_to_pop = old_len - np_new
         for _ in range(amount_to_pop):
@@ -613,7 +627,7 @@ def get_population_dataframe(apopulation: Population) -> pd.DataFrame:
     Returns
     -------
     pd.DataFrame
-        jA DataFrame where rows are individuals and columns are features, scores,
+        A DataFrame where rows are individuals and columns are features, scores,
         counts, and accuracy.
     """
     lista_features = [

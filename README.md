@@ -116,7 +116,7 @@ The algorithm relies on the following key elements:
 ### Algorithm Phases
 
 1.  **Population Creation:** A population of individuals is created with an initial number of selected dimensions between `[lower_k, upper_k]`. A seniority vector is established for the dimensions.
-2.  **Population Classification (Fitness Evaluation):** Individuals are evaluated and sorted based on their fitness score. Lower scores are better. The score is calculated as: `(1 - accuracy) + features_used / total_features)`.
+2.  **Population Classification (Fitness Evaluation):** Individuals are evaluated and sorted based on their fitness score. Lower scores are better. The score is calculated as: `0.99 * (1 - accuracy) + 0.01 * (features_used / total_features)`.
 3.  **Gain-Share Junior (Beginner):** Information sharing occurs between neighboring individuals.
 4.  **Gain-Share Senior (Intermediate):** Information sharing occurs using the best, middle, and worst individuals of the population.
 5.  **Population Reduction:** The population size is linearly reduced as the evaluations progress to focus on the most promising individuals.

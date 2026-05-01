@@ -106,8 +106,8 @@ class TestPBGSK(unittest.TestCase):
         features = np.array([True, True])
         score, acc = evaluator.calculate_fitness(features)
         self.assertEqual(acc, 1.0)
-        # Score: (1-1.0) + (1-2/2) = 0.0
-        self.assertEqual(score, 0.0)
+        # Score: 0.99 * (1 - 1.0) + 0.01 * (2 / 2) = 0.01
+        self.assertAlmostEqual(score, 0.01)
 
         # Test with no features
         features = np.array([False, False])
@@ -125,8 +125,8 @@ class TestPBGSK(unittest.TestCase):
         pBGSK.calculate_population_fitness(apopulation, indiv)
 
         self.assertEqual(indiv.acc, 1.0)
-        # Score: (1-1.0) + (1-1/2) = 0.5
-        self.assertEqual(indiv.score, 0.5)
+        # Score: 0.99 * (1 - 1.0) + 0.01 * (1 / 2) = 0.005
+        self.assertAlmostEqual(indiv.score, 0.005)
         # self.assertEqual(indiv.number_of_features, 1)
         self.assertEqual(len(indiv), 1)
 
@@ -144,9 +144,9 @@ class TestPBGSK(unittest.TestCase):
         pBGSK.evaluate_pending_individuals(apopulation)
         pBGSK.sort_population(apopulation, t_sort="fitness")
 
-        # indiv2 score: 0.0 (better), indiv1 score: 0.5
-        self.assertEqual(apopulation.individuals[0].individual_id, 2)
-        self.assertEqual(apopulation.individuals[1].individual_id, 1)
+        # Equal accuracy; the article fitness favors the individual with fewer features.
+        self.assertEqual(apopulation.individuals[0].individual_id, 1)
+        self.assertEqual(apopulation.individuals[1].individual_id, 2)
 
     def test_population_len(self):
         indiv1 = pBGSK.Individual(1, [True, False])
@@ -175,8 +175,8 @@ class TestPBGSK(unittest.TestCase):
         evaluated = pBGSK.evaluate_pending_individuals(apopulation)
 
         self.assertEqual(evaluated, 2)
-        self.assertEqual(indiv1.score, 0.5)
-        self.assertEqual(indiv2.score, 0.0)
+        self.assertAlmostEqual(indiv1.score, 0.005)
+        self.assertAlmostEqual(indiv2.score, 0.01)
 
     def test_dimension_distribution(self):
         # Using a larger dummy population to test distribution
@@ -251,16 +251,19 @@ class TestPBGSK(unittest.TestCase):
 
     def test_population_reduction(self):
         apopulation = pBGSK.Population(
-            [], self.data_tuple, self.dataset_name, self.columns_names, knn_val=1
+            [pBGSK.Individual(i, [True, True]) for i in range(20)],
+            self.data_tuple,
+            self.dataset_name,
+            self.columns_names,
+            knn_val=1,
         )
-        apopulation.individuals = [pBGSK.Individual(i, [True, True]) for i in range(20)]
-        apopulation.len = 20
         # Initialize apopulation.df for population_reduction to work
         pBGSK.get_population_dataframe(apopulation)
 
-        # Force a reduction
+        # Force a reduction to the article minimum population size.
+        apopulation.nfe = 100
         pBGSK.population_reduction(apopulation, nfe_total=100, low_b=0.5, high_b=0.6)
-        # nfe=0. np_new = int((0.5*20 - 0.6*20) * 0 + 0.6*20) = 12.
+        # NPG+1 = round((12 - 20) * (100 / 100) + 20) = 12.
         self.assertEqual(apopulation.len, 12)
         self.assertEqual(len(apopulation.individuals), 12)
 
