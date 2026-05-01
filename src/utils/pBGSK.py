@@ -558,6 +558,13 @@ def intermediate_gsk(apopulation: Population, knowledge_ratio: float = 0.95):
                     dimension=dimension,
                 )
 
+def _new_population_size(
+    actual_nfe: int,
+    total_nfe: int,
+    np_max: int,
+    np_min: int = 12,
+):
+    return round((np_min - np_max) * (actual_nfe / total_nfe) + np_max)
 
 def population_reduction(
     apopulation: Population, nfe_total: int, low_b: float = 0.9, high_b: float = 0.95
@@ -581,14 +588,6 @@ def population_reduction(
     bool
         True if the population was not reduced, False otherwise.
     """
-    def _new_population_size(
-        actual_nfe: int,
-        total_nfe: int,
-        np_max: int,
-        np_min: int = 12,
-    ):
-        return round((np_min - np_max) * (actual_nfe / total_nfe) + np_max)
-
     km = apopulation.df.loc[:, ["score", "n_features", "acc"]].mean().to_frame().T
     km.rename(
         columns={
