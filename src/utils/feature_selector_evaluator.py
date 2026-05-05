@@ -1,8 +1,10 @@
 import numpy as np
+import os
+import sys
 from sklearn.metrics import accuracy_score
 from sklearn.neighbors import KNeighborsClassifier
-
-
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
+from utils.pBGSK import _as_feature_mask, _count_selected_features
 class FeatureSelectorEvaluator:
     """
     Evaluates the fitness of a feature subset.

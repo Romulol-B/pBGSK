@@ -11,13 +11,15 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
 
-from src.utils.feature_selector_evaluator import FeatureSelectorEvaluator
+# Add project root to sys.path before importing src.* when run as a script.
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
-# Add project root to sys.path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
-from src.utils import pBGSK
-from src.utils.data_importer import DATASET_REGISTRY
+from src.utils import pBGSK  # noqa: E402
+from src.utils.data_importer import DATASET_REGISTRY  # noqa: E402
+from src.utils.feature_selector_evaluator import FeatureSelectorEvaluator  # noqa: E402
+from src.utils.pbgsk_feature_selector import PBGSKFeatureSelector  # noqa: E402
 
 
 class TestPBGSK(unittest.TestCase):
@@ -56,6 +58,9 @@ class TestPBGSK(unittest.TestCase):
         # Reset seeds for each test
         random.seed(42)
         np.random.seed(42)
+
+    def test_pbgsk_feature_selector_import_is_backwards_compatible(self):
+        self.assertIs(pBGSK.PBGSKFeatureSelector, PBGSKFeatureSelector)
 
     def test_individual_init(self):
         features = np.array([True, False])
