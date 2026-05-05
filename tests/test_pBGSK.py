@@ -11,6 +11,8 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
 
+from src.utils.feature_selector_evaluator import FeatureSelectorEvaluator
+
 # Add project root to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -105,7 +107,7 @@ class TestPBGSK(unittest.TestCase):
                     self.assertEqual(int(individual[0]), expected)
 
     def test_feature_selector_evaluator(self):
-        evaluator = pBGSK.FeatureSelectorEvaluator(*self.data_tuple, knn_val=1)
+        evaluator = FeatureSelectorEvaluator(*self.data_tuple, knn_val=1)
 
         # Test with all features
         features = np.array([True, True])
@@ -121,7 +123,7 @@ class TestPBGSK(unittest.TestCase):
         self.assertEqual(acc, 0.0)
 
     def test_feature_selector_evaluator_rejects_mask_length_mismatch(self):
-        evaluator = pBGSK.FeatureSelectorEvaluator(*self.data_tuple, knn_val=1)
+        evaluator = FeatureSelectorEvaluator(*self.data_tuple, knn_val=1)
 
         with self.assertRaisesRegex(ValueError, "length must match"):
             evaluator.calculate_fitness(np.array([True, False, True]))
