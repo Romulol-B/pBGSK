@@ -10,3 +10,4 @@ notebooks\experiments.ipynb
 generate_notebook.py
 #article
 Artigo.pdf
+tests/test_notebook_interativos.ipynb

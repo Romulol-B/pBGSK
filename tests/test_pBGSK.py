@@ -1,9 +1,10 @@
+import os
+import random
+import sys
 import unittest
+
 import numpy as np
 import pandas as pd
-import random
-import os
-import sys
 from sklearn.base import clone
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import GridSearchCV
@@ -60,6 +61,10 @@ class TestPBGSK(unittest.TestCase):
         self.assertEqual(indiv.individual_id, 1)
         np.testing.assert_array_equal(indiv.features, features)
 
+    def test_individual_rejects_non_1d_feature_mask(self):
+        with self.assertRaisesRegex(ValueError, "one-dimensional"):
+            pBGSK.Individual(1, np.array([[True, False]]))
+
     def test_influence_matches_readme_junior_case_1_table(self):
         cases = [
             (0, 0, 0, 0),
@@ -115,6 +120,23 @@ class TestPBGSK(unittest.TestCase):
         self.assertEqual(score, 2.0)
         self.assertEqual(acc, 0.0)
 
+    def test_feature_selector_evaluator_rejects_mask_length_mismatch(self):
+        evaluator = pBGSK.FeatureSelectorEvaluator(*self.data_tuple, knn_val=1)
+
+        with self.assertRaisesRegex(ValueError, "length must match"):
+            evaluator.calculate_fitness(np.array([True, False, True]))
+
+    def test_cross_validated_evaluator_rejects_mask_length_mismatch(self):
+        evaluator = pBGSK.CrossValidatedFeatureSelectorEvaluator(
+            X=self.selector_X,
+            y=self.selector_y,
+            estimator=KNeighborsClassifier(n_neighbors=1),
+            cv=2,
+        )
+
+        with self.assertRaisesRegex(ValueError, "length must match"):
+            evaluator.calculate_fitness(np.array([True, False, True]))
+
     def test_calculate_population_fitness(self):
         features = np.array([True, False])
         indiv = pBGSK.Individual(1, features)
@@ -157,7 +179,10 @@ class TestPBGSK(unittest.TestCase):
         self.assertEqual(
             pBGSK._new_population_size(
                 np_min=np_min, np_max=np_max, actual_nfe=actual_nfe, total_nfe=total_nfe
-        ) ,result)
+            ),
+            result,
+        )
+
     def test_population_len(self):
         indiv1 = pBGSK.Individual(1, [True, False])
         indiv2 = pBGSK.Individual(2, [True, True])
@@ -294,6 +319,25 @@ class TestPBGSK(unittest.TestCase):
         self.assertIn("n_features", df.columns)
         self.assertIn("acc", df.columns)
         self.assertEqual(df.loc[0, "n_features"], 1)
+
+    def test_get_population_dataframe_uses_boolean_mask_matrix_counts(self):
+        indiv1 = pBGSK.Individual(1, [True, False])
+        indiv2 = pBGSK.Individual(2, [True, True])
+        apopulation = pBGSK.Population(
+            [indiv1, indiv2],
+            self.data_tuple,
+            self.dataset_name,
+            self.columns_names,
+            knn_val=1,
+        )
+
+        df = pBGSK.get_population_dataframe(apopulation)
+
+        np.testing.assert_array_equal(
+            df[self.columns_names].to_numpy(),
+            np.array([[1, 0], [1, 1]], dtype=np.int8),
+        )
+        np.testing.assert_array_equal(df["n_features"].to_numpy(), np.array([1, 2]))
 
     def test_population_creation(self):
         apopulation = pBGSK.population_creation(

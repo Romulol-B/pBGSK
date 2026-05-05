@@ -24,6 +24,38 @@ from sklearn.utils.multiclass import check_classification_targets
 from sklearn.utils.validation import check_is_fitted, validate_data
 
 
+def _as_feature_mask(
+    features: np.ndarray,
+    n_features: int,
+    *,# como isso funciona ?
+    name: str = "features",
+) -> np.ndarray:
+    """
+    Return a one-dimensional boolean feature mask with shape ``(n_features,)``.
+
+    NumPy boolean indexing requires the mask length to match the selected axis.
+    Validating that contract at the boundary gives clearer errors than letting
+    column slicing fail deeper inside the evaluator.
+    """
+    mask = np.asarray(features, dtype=bool)
+    if mask.ndim != 1:
+        raise ValueError(
+            f"{name} must be a one-dimensional boolean mask with shape "
+            f"({n_features},)."
+        )
+    if mask.shape[0] != n_features:
+        raise ValueError(
+            f"{name} length must match the number of features ({n_features}); "
+            f"got {mask.shape[0]}."
+        )
+    return mask
+
+
+def _count_selected_features(features: np.ndarray) -> int:
+    """Count selected features in a boolean mask."""
+    return int(np.count_nonzero(features))
+
+
 def k_factor(kf: float = 1) -> int:
     """
     Stochastic knowledge factor multiplier.
@@ -66,13 +98,15 @@ class Individual:
         features: np.ndarray,
     ):
         self.individual_id = individual_id
-        self.features = np.array(features, dtype=bool)
+        self.features = np.asarray(features, dtype=bool).copy()
+        if self.features.ndim != 1:
+            raise ValueError("features must be a one-dimensional feature mask.")
         self.acc = 0.0
         self.score = 2.0
         self.df = None
 
     def __len__(self):
-        return np.sum(self.features)
+        return _count_selected_features(self.features)
 
     def __getitem__(self, idx):
         return self.features[idx]
@@ -82,7 +116,7 @@ class Individual:
     def __repr__(self):
         return (f"individual :{self.individual_id}\n"
                 f" Score:{self.score} and Accuracy:{self.acc}"
-                f"Number of Features:{np.sum(self.features)}"
+                f"Number of Features:{_count_selected_features(self.features)}"
                 f"Binary feature vector:{self.features+0}")#conversion to int.
 
 def influence(
@@ -154,6 +188,16 @@ class FeatureSelectorEvaluator:
         self.X_test = np.asarray(X_test)
         self.y_train = np.asarray(y_train)
         self.y_test = np.asarray(y_test)
+        if self.X_train.ndim != 2 or self.X_test.ndim != 2:
+            raise ValueError(
+                "X_train and X_test must be two-dimensional arrays with shape "
+                "(n_samples, n_features)."
+            )
+        if self.X_train.shape[1] != self.X_test.shape[1]:
+            raise ValueError(
+                "X_train and X_test must have the same number of feature columns."
+            )
+        self.n_features_in_ = self.X_train.shape[1]
         if other_classifier is None:
             self.classifier = KNeighborsClassifier(n_neighbors=knn_val)
         else:
@@ -190,9 +234,10 @@ class FeatureSelectorEvaluator:
             feature_ratio = number_of_chosen_features / total_features
             return np.float64(gamma1 * (1 - acc) + (1 - gamma1) * feature_ratio)
 
-        number_of_features = sum(features)
+        features = _as_feature_mask(features, self.n_features_in_)
+        number_of_features = _count_selected_features(features)
         if number_of_features == 0:
-            return 2.0, 0.0
+            return np.float64(2.0), np.float64(0.0)
 
         X_train_selected = self.X_train[:, features]
         X_test_selected = self.X_test[:, features]
@@ -201,7 +246,7 @@ class FeatureSelectorEvaluator:
         y_pred = self.classifier.predict(X_test_selected)
 
         acc = accuracy_score(self.y_test, y_pred)
-        score = _score_calculation(acc, number_of_features, len(features))
+        score = _score_calculation(acc, number_of_features, features.size)
         return score, np.float64(acc)
 
 
@@ -246,12 +291,19 @@ class CrossValidatedFeatureSelectorEvaluator:
         self.cv = cv
         self.feature_penalty = feature_penalty
         self.n_jobs = n_jobs
+        if self.X.ndim != 2:
+            raise ValueError(
+                "X must be a two-dimensional array with shape "
+                "(n_samples, n_features)."
+            )
+        self.n_features_in_ = self.X.shape[1]
 
     def calculate_fitness(
         self,
         features: np.ndarray,
     ) -> tuple[np.float64, np.float64]:
-        number_of_features = int(np.sum(features))
+        features = _as_feature_mask(features, self.n_features_in_)
+        number_of_features = _count_selected_features(features)
         if number_of_features == 0:
             return np.float64(np.inf), np.float64(-np.inf)
 
@@ -266,7 +318,7 @@ class CrossValidatedFeatureSelectorEvaluator:
         )
 
         mean_score = np.float64(np.mean(scores))
-        feature_ratio = number_of_features / len(features)
+        feature_ratio = number_of_features / features.size
         fitness = np.float64(-mean_score + self.feature_penalty * feature_ratio)
         return fitness, mean_score
 
@@ -337,7 +389,7 @@ class Population:
         return self.individuals[idx]
 
     def __setitem__(self, idx, value):
-        raise ValueError("doidao mano")
+        raise ValueError("Operation not supported")
 
 
 def calculate_population_fitness(apopulation: Population, individual: Individual):
@@ -382,7 +434,7 @@ def evaluate_pending_individuals(apopulation: Population) -> int:
     """
     evaluated = 0
     for indiv in apopulation.individuals:
-        if indiv.score == 2.0 and np.sum(indiv.features) > 0:
+        if indiv.score == 2.0 and _count_selected_features(indiv.features) > 0:
             calculate_population_fitness(apopulation, indiv)
             evaluated += 1
     return evaluated
@@ -629,14 +681,34 @@ def get_population_dataframe(apopulation: Population) -> pd.DataFrame:
         A DataFrame where rows are individuals and columns are features, scores,
         counts, and accuracy.
     """
-    lista_features = [
-        indiv.features.astype(np.int8) for indiv in apopulation.individuals
-    ]
-    pop_df = pd.DataFrame(lista_features, columns=apopulation.columns_names)
+    n_features = len(apopulation.columns_names)
+    if apopulation.individuals:
+        feature_matrix = np.asarray(
+            [
+                _as_feature_mask(indiv.features, n_features)
+                for indiv in apopulation.individuals
+            ],
+            dtype=bool,
+        )
+    else:
+        feature_matrix = np.empty((0, n_features), dtype=bool)
 
-    pop_df["score"] = [indiv.score for indiv in apopulation.individuals]
-    pop_df["n_features"] = [np.sum(indiv.features) for indiv in apopulation.individuals]
-    pop_df["acc"] = [indiv.acc for indiv in apopulation.individuals]
+    pop_df = pd.DataFrame(
+        feature_matrix.astype(np.int8, copy=False),
+        columns=apopulation.columns_names,
+    )
+
+    pop_df["score"] = np.fromiter(
+        (indiv.score for indiv in apopulation.individuals),
+        dtype=float,
+        count=len(apopulation.individuals),
+    )
+    pop_df["n_features"] = np.count_nonzero(feature_matrix, axis=1)
+    pop_df["acc"] = np.fromiter(
+        (indiv.acc for indiv in apopulation.individuals),
+        dtype=float,
+        count=len(apopulation.individuals),
+    )
 
     apopulation.df = pop_df
     return pop_df
@@ -999,13 +1071,13 @@ class PBGSKFeatureSelector(SelectorMixin, BaseEstimator):
             random_state=seed,
         )
 
-        support = np.asarray(best_features, dtype=bool)
+        support = _as_feature_mask(best_features, n_features, name="best_features")
         best_fitness, best_metric = evaluator.calculate_fitness(support)
 
         self.support_ = support
         self.best_fitness_ = float(best_fitness)
         self.best_cv_score_ = float(best_metric)
-        self.n_features_selected_ = int(np.sum(support))
+        self.n_features_selected_ = _count_selected_features(support)
         self.population_ = apopulation
         self.generation_history_ = apopulation.geng_df.copy()
 
